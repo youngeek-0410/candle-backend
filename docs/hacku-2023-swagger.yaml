@@ -17,7 +17,7 @@ tags:
   - name: user
   - name: candle
   - name: photo
-  - name: mosaic_art
+  - name: mosaic-art
 
 paths:
     /user/{user_id}:
@@ -193,17 +193,17 @@ paths:
                   type: array
                   items:
                     type: string
-                example: ["photo_id-1", "photo-id-2"]
+                example: ["photo-id-1", "photo-id-2"]
           '401':
             description: "Unauthorized"
           '404':
             description: "Not found"
           '500':
             description: "Internal Server Error"
-    /mosaic_art:
+    /mosaic-art:
       get:
         tags:
-          - mosaic_art
+          - mosaic-art
         summary: "Get mosaic art"
         description: "Retrieve mosaic art"
         responses:
@@ -243,10 +243,17 @@ components:
             type: string
           description: ユーザの全ての写真 ID
           example: ["photo-id-1", "photo-id-2", "photo-id-3"]
-        pixel_coordinate:
-          type: array
-          description: モザイクアート中のどのピクセルに割り当てるか
-          example: [{row: 1, col: 2}, {row: 3, col: 4}]
+          pixel_coordinate:
+            type: array
+            items:
+              type: object
+              properties:
+                row:
+                  type: integer
+                col:
+                  type: integer
+            description: モザイクアート中のどのピクセルに割り当てるか
+            example: [{row: 1, col: 2}, {row: 3, col: 4}]
     candle:
       type: object
       properties:
