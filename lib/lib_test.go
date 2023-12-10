@@ -9,7 +9,7 @@ package main
 // )
 
 // example tests. To run these tests, uncomment this file along with the
-// example resource in main_test.go
+// example resource in lib_test.go
 // func TestLibStack(t *testing.T) {
 // 	// GIVEN
 // 	app := awscdk.NewApp(nil)
