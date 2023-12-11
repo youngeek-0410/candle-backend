@@ -1,277 +1,219 @@
 openapi: 3.0.3
 info:
-  title: Swagger Candle - OpenAPI 3.0
-  description: |-
-    HackU KOSEN 2023:
-    Candle Backend
-  termsOfService: http://swagger.io/terms/
+  title: Candle Backend API
   version: 1.0.0
-servers:
-#TODO: change url to our server
-  - url: https://petstore3.swagger.io/api/v3
-security:
-  - OAuth2:
-    - read
-    - write
-tags:
-  - name: user
-  - name: candle
-  - name: photo
-  - name: mosaic-art
-
+  description: API for creating and managing rooms.
 paths:
-    /user/{user_id}:
-      get:
-        tags:
-          - user
-        summary: "Get user information"
-        description: "Retrieve user information by user ID"
-        parameters:
-          - in: path
-            name: user_id
-            required: true
+  /room:
+    post:
+      summary: Create a new room
+      requestBody:
+        required: true
+        content:
+          application/json:
             schema:
-              type: string
-
-        responses:
-          '200':
-            description: "Successful operation"
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/user'
-          '401':
-            description: "Unauthorized"
-          '404':
-            description: "Not found"
-          '500':
-            description: "Internal Server Error"
-      put:
-        tags:
-          - user
-        summary: "Update user information"
-        description: "Update user information by user ID"
-        parameters:
-          - in: path
-            name: user_id
-            required: true
-            schema:
-              type: string
-        requestBody:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/user'
-        responses:
-          '200':
-            description: "Successful operation"
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/user'
-          '401':
-            description: "Unauthorized"
-          '404':
-            description: "Not found"
-          '500':
-            description: "Internal Server Error"
-    /candle/{user_id}:
-      get:
-        tags:
-          - candle
-        summary: "Get candle information"
-        description: "Retrieve candle information by user ID"
-        parameters:
-          - in: path
-            name: user_id
-            required: true
-            schema:
-              type: string
-        responses:
-          '200':
-            description: "Successful operation"
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/candle'
-          '401':
-            description: "Unauthorized"
-          '404':
-            description: "Not found"
-          '500':
-            description: "Internal Server Error"
-      put:
-        tags:
-          - candle
-        summary: "Update candle information"
-        description: "Update candle information by user ID"
-        parameters:
-          - in: path
-            name: user_id
-            required: true
-            schema:
-              type: string
-        requestBody:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/candle'
-        responses:
-          '200':
-            description: "Successful operation"
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/candle'
-          '401':
-            description: "Unauthorized"
-          '500':
-            description: "Internal Server Error"
-    /photo/{photo_id}:
-      get:
-        tags:
-          - photo
-        summary: "Get specific photo"
-        description: "Retrieve a specific photo by photo ID"
-        parameters:
-          - in: path
-            name: photo_id
-            required: true
-            schema:
-              type: string
-        responses:
-          '200':
-            description: "Successful operation"
-            content:
-              multipart/form-data:
-                schema:
+              type: object
+              properties:
+                room_id:
                   type: string
-                  format: binary
-                example: "data:image/png;base64,SGVsbG8gV29ybGQhCg=="
-          '401':
-            description: "Unauthorized"
-          '404':
-            description: "Not found"
-          '500':
-            description: "Internal Server Error"
-    /photo:
-      post:
-        tags:
-          - photo
-        summary: "Upload photo"
-        description: "Upload photo"
-        requestBody:
+                  description: Room ID
+                  example: youngeek
+      responses:
+        '201':
+          description: Room created successfully
           content:
-            multipart/form-data:
+            application/json:
               schema:
                 type: object
-                format: binary
-        responses:
-          '200':
-            description: "Successful operation"
-            content:
-              application/json:
-                schema:
-                  type: string
-                  example: "photo-id"
-          '401':
-            description: "Unauthorized"
-          '500':
-            description: "Internal Server Error"
-    /photos:
-      get:
-        tags:
-        - photo
-        summary: "Get user's photo IDs"
-        description: "Retrieve a list of photo IDs owned by the user"
-        responses:
-          '200':
-            description: "Successful operation"
-            content:
-              application/json:
-                schema:
-                  type: array
-                  items:
+                properties:
+                  room_id:
                     type: string
-                example: ["photo-id-1", "photo-id-2"]
-          '401':
-            description: "Unauthorized"
-          '404':
-            description: "Not found"
-          '500':
-            description: "Internal Server Error"
-    /mosaic-art:
-      get:
-        tags:
-          - mosaic-art
-        summary: "Get mosaic art"
-        description: "Retrieve mosaic art"
-        responses:
-          '200':
-            description: "Successful operation"
-            content:
-              multipart/form-data:
-                schema:
+                    example: youngeek
+        '400':
+          description: Invalid input
+        '409':
+          description: Room is already in use
+  /room/{room_id}:
+    post:
+      summary: Enter a room
+      parameters:
+        - name: room_id
+          in: path
+          required: true
+          description: Unique identifier of the room
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
                   type: string
-                  format: binary
-                example: "data:image/png;base64,SGVsbG8gV29ybGQhCg=="
-          '401':
-            description: "Unauthorized"
-          '500':
-            description: "Internal Server Error"
-            
+                  description: Generated UUID for the user
+                answers:
+                  type: object
+                  required:
+                    - questionId
+                    - answer
+                  properties:
+                    birthday:
+                      type: string
+                      description: Birthday of the user
+                    like_onepeace:
+                      type: boolean
+                      description: Do you like ONE-PEACE?
+                  description: Answers to the questions
+      responses:
+        '200':
+          description: Entered the room successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Entered room successfully
+        '400':
+          description: Invalid input
+        '404':
+          description: Room not found
+  /room/{room_id}/start:
+    get:
+      summary: Start the room and distribute roles
+      parameters:
+        - name: room_id
+          in: path
+          required: true
+          description: Unique identifier of the room
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 全員のキャンドル情報
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          userId:
+                            type: string
+                            description: Unique identifier of the user
+                          candles:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                question:
+                                  type: string
+                                  description: The question
+                                answer:
+                                  type: string
+                                  description: The answer to the question
+                          santa:
+                            type: boolean
+                            description: Whether the user is santa or not
+                example:
+                  - userId: userid_1
+                    candles:
+                      - question: "好きな漫画は"
+                        answer: "ONE PIECE"
+                      - question: "誕生月は"
+                        answer: "1月"
+                      - question: "好きな果物は"
+                        answer: "バナナ"
+                      - santa: true
+                  - userId: userid_2
+                    candles:
+                      - question: "好きな漫画は"
+                        answer: "HUNTERxHUNTER"
+                      - question: "誕生月は"
+                        answer: "2月"
+                      - question: "好きな果物は"
+                        answer: "りんご"
+                      - santa: false
+        '404':
+          description: Room not found
+  /{room_id}/result:
+    get:
+      summary: Get final results
+      responses:
+        '200':
+          description: Successfully retrieved results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    userId:
+                      type: string
+                      description: Unique identifier of the user
+                    fire_count:
+                      type: integer
+                      description: Number of fired candles
+                  example:
+                    - userId: user_1
+                      fire_count: 2
+                    - userId: user_2
+                      fire_count: 1                   
+        '404':
+          description: Results not found
+    post:
+      summary: Submit fire count for tallying
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - fire_count
+              properties:
+                user_id:
+                  type: string
+                  description: Unique identifier of the user
+                fire_count:
+                  type: integer
+                  description: Count of the fire
+      responses:
+        '200':
+          description: tallying successful
+        '400':
+          description: Invalid input
 components:
   schemas:
-    user:
+    Room:
       type: object
       properties:
-        uid:
-          type: integer
-          description: UID
-          example: 0123456789
-        user_name:
+        room_id:
           type: string
-          description: User name
-          example: ヤフー太郎
-        candle_id:
-          type: integer
-          description: キャンドル ID
-          example: 0123456789
-        photo_ids:
+        participants:
           type: array
           items:
             type: string
-          description: ユーザの全ての写真 ID
-          example: ["photo-id-1", "photo-id-2", "photo-id-3"]
-          pixel_coordinate:
-            type: array
-            items:
-              type: object
-              properties:
-                row:
-                  type: integer
-                col:
-                  type: integer
-            description: モザイクアート中のどのピクセルに割り当てるか
-            example: [{row: 1, col: 2}, {row: 3, col: 4}]
-    candle:
+    User:
       type: object
       properties:
         user_id:
-          type: integer
-          description: Candle's owner
-          example: 0123456789
-        last_fired:
           type: string
-          format: date-time
-          description: Last fired date
-  
-  securitySchemes:
-    OAuth2:
-      type: oauth2
-      flows:
-        implicit:
-          authorizationUrl: 'https://example.com/oauth/authorize'
-          scopes:
-            read: Read access to protected resources
-            write: Write access to protected resources
+        answer:
+          type: object
+        is_santa:
+          type: boolean
+        candle:
+          type: array
+          items:
+            type: string
+        fire_count:
+          type: integer
