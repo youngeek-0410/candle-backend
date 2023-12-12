@@ -2,9 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as s3 from 'aws-cdk-lib/aws-s3';
-import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as logs from 'aws-cdk-lib/aws-logs';
+import { DockerImage } from 'aws-cdk-lib';
 
 export class CandleBackendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -15,32 +13,39 @@ export class CandleBackendStack extends cdk.Stack {
       restApiName: 'CandleBackendApi',
     });
 
-    // Create S3 bucket
-    const bucket = new s3.Bucket(this, 'CandleBackendBucket');
+    const roomTable = new cdk.aws_dynamodb.Table(this, 'CandleBackendRoomTable', {
+      partitionKey: { name: 'room_id', type: cdk.aws_dynamodb.AttributeType.STRING },
+      tableName: 'CandleBackendRoomTable',
+    });
 
-    // Create CloudFront distribution
-    const distribution = new cloudfront.CloudFrontWebDistribution(this, 'CandleBackendAPIDistribution', {
-      originConfigs: [
-        {
-          customOriginSource: {
-            domainName: api.restApiId + '.execute-api.' + this.region + '.amazonaws.com',
-            originPath: '/prod',
-          },
-          behaviors: [{ isDefaultBehavior: true }],
-        },
-      ],
+    const userTable = new cdk.aws_dynamodb.Table(this, 'CandleBackendUserTable', {
+      partitionKey: { name: 'user_id', type: cdk.aws_dynamodb.AttributeType.STRING },
+      tableName: 'CandleBackendUserTable',
     });
 
 
     // Resolve requests with Lambda
-    const user = api.root.addResource('user');
-    user.addMethod('GET',new apigateway.LambdaIntegration(
-      new lambda.Function(this, 'CandleBackendGETUserHandler', {
-        runtime: lambda.Runtime.PROVIDED_AL2,
-        code: lambda.Code.fromAsset('lambda/user/{user_id}/GET'),
-        handler: 'index.handler',
-        logRetention: logs.RetentionDays.ONE_DAY,
-      })
-    ));
+    const room = api.root.addResource('room');
+
+    const roomPOSTHandler = new lambda.Function(this, 'CandleBackendRoomPOSTHandler', {
+      functionName: 'RoomPOSTHandler',
+      runtime: lambda.Runtime.PROVIDED_AL2,
+      handler: 'bootstrap',
+      code: lambda.Code.fromAsset('lambda/room/POST', {
+        bundling: {
+          image: DockerImage.fromRegistry("golang:1.21"),
+          command: [
+            'bash', '-c', [
+              "export GOCACHE=/tmp/go-cache",
+              "export GOPATH=/tmp/go-path",
+              "CGO_ENABLED=0 GOOS=linux go build -tags lambda.norpc -o /asset-output/bootstrap main.go",
+            ].join(" && "),
+          ],
+        },
+      }),
+    });
+    roomTable.grantReadWriteData(roomPOSTHandler);
+
+    room.addMethod('POST', new apigateway.LambdaIntegration(roomPOSTHandler))
   }
 }
