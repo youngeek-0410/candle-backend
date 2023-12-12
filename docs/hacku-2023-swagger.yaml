@@ -4,6 +4,35 @@ info:
   version: 1.0.0
   description: API for creating and managing rooms.
 paths:
+  /questions:
+    get:
+      summary: Get questions
+      responses:
+        '200':
+          description: List of questions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  questions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        statement:
+                          type: string
+                example:
+                  questions:
+                    - id: 1
+                      statement: "好きな漫画は"
+                    - id: 2
+                      statement: "誕生月は"
+                    - id: 3
+                      statement: "好きな果物は"
+        
   /room:
     post:
       summary: Create a new room
@@ -33,6 +62,7 @@ paths:
           description: Invalid input
         '409':
           description: Room is already in use
+
   /room/{room_id}:
     post:
       summary: Enter a room
@@ -50,22 +80,23 @@ paths:
             schema:
               type: object
               properties:
-                user_id:
+                nickname:
                   type: string
-                  description: Generated UUID for the user
+                  description: Nickname of the user
                 answers:
-                  type: object
-                  required:
-                    - questionId
-                    - answer
-                  properties:
-                    birthday:
-                      type: string
-                      description: Birthday of the user
-                    like_onepeace:
-                      type: boolean
-                      description: Do you like ONE-PEACE?
-                  description: Answers to the questions
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - question_id
+                      - answer
+                    properties:
+                      question_id:
+                        type: string
+                        description: Unique identifier of the question
+                      answer:
+                        type: boolean
+                        description: Answer to the question
       responses:
         '200':
           description: Entered the room successfully
@@ -74,13 +105,15 @@ paths:
               schema:
                 type: object
                 properties:
-                  message:
+                  user_id:
                     type: string
-                    example: Entered room successfully
+                    example: 0DF553D94DF68P
         '400':
           description: Invalid input
         '404':
           description: Room not found
+
+
   /room/{room_id}/start:
     get:
       summary: Start the room and distribute roles
@@ -151,21 +184,27 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    userId:
-                      type: string
-                      description: Unique identifier of the user
-                    fire_count:
-                      type: integer
-                      description: Number of fired candles
-                  example:
-                    - userId: user_1
-                      fire_count: 2
-                    - userId: user_2
-                      fire_count: 1                   
+                type: object
+                properties:
+                  result:
+                    type: boolean
+                    description: Santa won or the citizens won
+                  candles:
+                    type: array
+                    description: Number of fired candles
+                    items:
+                      type: object
+                      properties:
+                        candle_id:
+                          type: string
+                          description: candle id
+                        user:
+                          type: object
+                          properties:
+                            user_name:
+                              type: string
+                            is_santa:
+                              type: boolean
         '404':
           description: Results not found
     post:
@@ -177,18 +216,26 @@ paths:
             schema:
               type: object
               required:
-                - user_id
-                - fire_count
+                - fired_user_id
+                - question_id
               properties:
-                user_id:
+                fired_user_id:
                   type: string
                   description: Unique identifier of the user
-                fire_count:
-                  type: integer
-                  description: Count of the fire
+                question_id:
+                  type: string
+                  description: Unique identifier of the question
       responses:
         '200':
           description: tallying successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fired:
+                    type: boolean
+                    description: fired or non-fired?
         '400':
           description: Invalid input
 components:
