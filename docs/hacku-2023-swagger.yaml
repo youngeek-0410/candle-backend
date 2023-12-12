@@ -20,17 +20,17 @@ paths:
                     items:
                       type: object
                       properties:
-                        id:
+                        question_id:
                           type: integer
                         statement:
                           type: string
                 example:
                   questions:
-                    - id: 1
+                    - question_id: 1
                       statement: "好きな漫画は"
-                    - id: 2
+                    - question_id: 2
                       statement: "誕生月は"
-                    - id: 3
+                    - question_id: 3
                       statement: "好きな果物は"
         
   /room:
@@ -126,53 +126,23 @@ paths:
             type: string
       responses:
         '200':
-          description: 全員のキャンドル情報
+          description: user information including user id, role, and candle
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  result:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          userId:
-                            type: string
-                            description: Unique identifier of the user
-                          candles:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                question:
-                                  type: string
-                                  description: The question
-                                answer:
-                                  type: string
-                                  description: The answer to the question
-                          santa:
-                            type: boolean
-                            description: Whether the user is santa or not
-                example:
-                  - userId: userid_1
-                    candles:
-                      - question: "好きな漫画は"
-                        answer: "ONE PIECE"
-                      - question: "誕生月は"
-                        answer: "1月"
-                      - question: "好きな果物は"
-                        answer: "バナナ"
-                      - santa: true
-                  - userId: userid_2
-                    candles:
-                      - question: "好きな漫画は"
-                        answer: "HUNTERxHUNTER"
-                      - question: "誕生月は"
-                        answer: "2月"
-                      - question: "好きな果物は"
-                        answer: "りんご"
-                      - santa: false
+                  user_id:
+                    type: string
+                  is_santa:
+                    type: boolean
+                  question:
+                    type: object
+                    properties:
+                      question_id:
+                        type: string
+                      statement:
+                        type: string
         '404':
           description: Room not found
   /{room_id}/result:
