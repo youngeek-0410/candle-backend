@@ -12,8 +12,8 @@ import (
 )
 
 type QuestionItem struct {
-    QuestionID int    `json:"question_id"`
-    Statement  string `json:"statement"`
+    QuestionID int    `json:"question_id" dynamodbav:"question_id"`
+    Statement  string `json:"statement" dynamodbav:"statement"`
 }
 
 func InsertData(ctx context.Context) error {

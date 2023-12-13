@@ -6,16 +6,16 @@ import (
 	"fmt"
 	"os"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
 type Question struct {
-	Question_id int `json:"question_id"`
-	Statement string `json:"statement"`
+	QuestionID int `json:"question_id" dynamodbav:"question_id"`
+	Statement string `json:"statement" dynamodbav:"statement"`
 }
 
 type Response struct {
@@ -30,14 +30,11 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		return serverErrorResponse(fmt.Errorf("TABLE_NAME environment variable is not set"))
 	}
 
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return serverErrorResponse(fmt.Errorf("error loading AWS configuration: %v", err))
-	}
+	sess := session.Must(session.NewSession())
 
-	svc := dynamodb.NewFromConfig(cfg)
+	svc := dynamodb.New(sess)
 
-	result, err := svc.Scan(ctx, &dynamodb.ScanInput{
+	result, err := svc.Scan(&dynamodb.ScanInput{
 		TableName: aws.String(tableName),
 	})
 	if err != nil {
@@ -47,7 +44,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	questions := make([]Question, 0)
 	for _, i := range result.Items {
 		question := Question{}
-		err := attributevalue.UnmarshalMap(i, &question)
+		err := dynamodbattribute.UnmarshalMap(i, &question)
 		if err != nil {
 			return serverErrorResponse(fmt.Errorf("error unmarshalling item: %v", err))
 		}
