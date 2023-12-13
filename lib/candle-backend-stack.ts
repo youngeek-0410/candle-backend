@@ -16,6 +16,7 @@ export class CandleBackendStack extends cdk.Stack {
     const roomTable = new cdk.aws_dynamodb.Table(this, 'CandleBackendRoomTable', {
       partitionKey: { name: 'room_id', type: cdk.aws_dynamodb.AttributeType.STRING },
       tableName: 'CandleBackendRoomTable',
+      timeToLiveAttribute: 'TTL',
     });
 
     const userTable = new cdk.aws_dynamodb.Table(this, 'CandleBackendUserTable', {
