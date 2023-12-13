@@ -30,7 +30,7 @@ func InsertData(ctx context.Context) error {
         {QuestionID: 2, Statement: "『進撃の巨人』は好きですか？"},
         {QuestionID: 3, Statement: "『ちいかわ』は好きですか？"},
         {QuestionID: 4, Statement: "『ポケモン』は好きですか？"},
-        {QuestionID: 5, Statement: "政権を支持しますか？"},
+        {QuestionID: 5, Statement: "温泉は好きですか？"},
     }
 
     for _, item := range items {
