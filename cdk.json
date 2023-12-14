@@ -1,6 +1,6 @@
 {
   "app": "npx ts-node --prefer-ts-exts bin/candle-backend.ts",
-  "toolkitStackName": "CandleBackendStack",
+  "toolkitStackName": "CandleBackendStack2",
   "watch": {
     "include": ["**"],
     "exclude": [
