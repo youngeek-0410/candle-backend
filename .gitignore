@@ -9,3 +9,5 @@ cdk.out
 
 # planet scale credentials
 .env
+
+.idea/
