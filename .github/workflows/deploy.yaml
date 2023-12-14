@@ -26,7 +26,7 @@ jobs:
           AWS_REGION: ${{ env.AWS_REGION }}
           AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
       - name: CDK Deploy
-        if: contains(github.event_name, 'push')
+        # if: contains(github.event_name, 'push')
         run: npm run cdk:deploy
         env:
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
