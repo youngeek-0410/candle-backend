@@ -13,6 +13,11 @@ export class CandleBackendStack extends cdk.Stack {
       restApiName: 'CandleBackendApi',
     });
 
+    const questionTable = new cdk.aws_dynamodb.Table(this, 'CandleBackendQuestionTable', {
+        partitionKey: { name: 'question_id', type: cdk.aws_dynamodb.AttributeType.NUMBER },
+        tableName: 'CandleBackendQuestionTable',
+    });
+
     const roomTable = new cdk.aws_dynamodb.Table(this, 'CandleBackendRoomTable', {
       partitionKey: { name: 'room_id', type: cdk.aws_dynamodb.AttributeType.STRING },
       tableName: 'CandleBackendRoomTable',
@@ -39,6 +44,38 @@ export class CandleBackendStack extends cdk.Stack {
         ],
       },
     }
+
+    const questions = api.root.addResource('questions')
+
+    // questions:GET
+    const questionsGETHandler = new lambda.Function(this, 'CandleBackendQuestionsGETHandler', {
+        functionName: 'QuestionsGETHandler',
+        runtime: lambda.Runtime.PROVIDED_AL2,
+        handler: 'bootstrap',
+        code: lambda.Code.fromAsset('lambda/questions/GET', goLambdaBundleConfig),
+        environment: {
+          TABLE_NAME: questionTable.tableName,
+        },
+    });
+    questionTable.grantReadWriteData(questionsGETHandler);
+    questions.addMethod('GET', new apigateway.LambdaIntegration(questionsGETHandler));
+
+    const seedDataLambda = new lambda.Function(this, 'CandleBackendSeedDataLambda', {
+        functionName: 'SeedDataLambda',
+        runtime: lambda.Runtime.PROVIDED_AL2,
+        handler: 'bootstrap',
+        code: lambda.Code.fromAsset('lambda/questions/seed', goLambdaBundleConfig),
+        environment: {
+          TABLE_NAME: questionTable.tableName,
+        },
+    });
+    questionTable.grantWriteData(seedDataLambda)
+
+    new cdk.CustomResource(this, 'CustomResource', {
+      serviceToken: seedDataLambda.functionArn,
+    });
+
+
     const room = api.root.addResource('room');
 
     //room:POST
@@ -50,7 +87,7 @@ export class CandleBackendStack extends cdk.Stack {
     });
     roomTable.grantReadWriteData(roomPOSTHandler);
     room.addMethod('POST', new apigateway.LambdaIntegration(roomPOSTHandler))
-    
+
     //room/{room_id}:POST
     const roomId = room.addResource('{room_id}');
     const roomIdPOSTHandler = new lambda.Function(this, 'CandleBackendRoomIdPOSTHandler', {
@@ -74,7 +111,7 @@ export class CandleBackendStack extends cdk.Stack {
     roomTable.grantReadWriteData(roomIdStartGETHandler);
     userTable.grantReadWriteData(roomIdStartGETHandler);
     start.addMethod('GET', new apigateway.LambdaIntegration(roomIdStartGETHandler))
-    
+
     //room/{room_id}/result:GET
     const result = roomId.addResource('result');
     const roomIdResultGETHandler = new lambda.Function(this, 'CandleBackendRoomIdResultGETHandler', {
