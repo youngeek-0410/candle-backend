@@ -1,0 +1,50 @@
+name: setup
+description: setup
+inputs:
+  AWS_REGION:
+    description: AWS region
+    required: true
+    default: ap-northeast-1
+  AWS_ROLE_ARN:
+    description: AWS role ARN
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Assume Role
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        role-to-assume:  ${{ inputs.AWS_ROLE_ARN }}
+        aws-region: ${{inputs.AWS_REGION}}
+    - name: Setup Node
+      uses: actions/setup-node@v2
+      with:
+        node-version: 16.x
+    - name: setup dependencies
+      run: npm ci
+    # - name: Setup CDK
+    #   shell: bash
+    #   run: npm -g install aws-cdk
+    # - name: Setup Python
+    #   uses: actions/setup-python@v2
+    #   with:
+    #     python-version: '3.9'
+    #     architecture: 'x64'
+    # - name: Get Python version
+    #   shell: bash
+    #   run: python -V
+    # - name: Install Poetry
+    #   shell: bash
+    #   run: |
+    #     curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+    #     echo "$HOME/.poetry/bin" >> $GITHUB_PATH
+    # - name: Poetry Version and Setup
+    #   shell: bash
+    #   run: |
+    #     poetry --version
+    #     poetry config virtualenvs.in-project true
+    # - name: Poetry Install Dependencies and activate
+    #   shell: bash
+    #   run: |
+    #     poetry install --no-interaction --no-dev
