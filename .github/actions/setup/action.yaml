@@ -22,6 +22,7 @@ runs:
       with:
         node-version: 16.x
     - name: setup dependencies
+      shell: bash
       run: npm ci
     # - name: Setup CDK
     #   shell: bash
