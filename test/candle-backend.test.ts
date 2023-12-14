@@ -7,7 +7,7 @@
 test('SQS Queue Created', () => {
 //   const app = new cdk.App();
 //     // WHEN
-//   const stack = new CandleBackend.CandleBackendStack(app, 'MyTestStack');
+//   const stack = new CandleBackend.CandleBackendStack2(app, 'MyTestStack');
 //     // THEN
 //   const template = Template.fromStack(stack);
 
