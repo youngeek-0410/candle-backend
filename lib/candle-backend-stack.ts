@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { DockerImage } from 'aws-cdk-lib';
+import * as cr from 'aws-cdk-lib/custom-resources';
 
 export class CandleBackendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -72,11 +73,20 @@ export class CandleBackendStack extends cdk.Stack {
     });
     questionTable.grantWriteData(seedDataLambda)
 
-    new cdk.CustomResource(this, 'CustomResource', {
-      serviceToken: seedDataLambda.functionArn,
+
+    const dbInitiateCR = new cr.AwsCustomResource(this, 'dbInitiateCustomResource', {
+      onCreate: {
+        service:'Lambda',
+        action: 'invoke',
+        parameters: {
+          FunctionName: seedDataLambda.functionArn,
+        },
+        physicalResourceId: cr.PhysicalResourceId.of('dbInitiateCustomResource'),
+      },
+      policy: cr.AwsCustomResourcePolicy.fromSdkCalls({resources: cr.AwsCustomResourcePolicy.ANY_RESOURCE}),
     });
 
-
+    seedDataLambda.grantInvoke(dbInitiateCR);
     const room = api.root.addResource('room');
 
     //room:POST
