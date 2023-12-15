@@ -18,13 +18,13 @@ type QuestionItem struct {
 	Statement  string `json:"statement" dynamodbav:"statement"`
 }
 
-func InsertData(ctx context.Context) error {
+func InsertData(ctx context.Context, event cfn.Event) (physicalResourceID string, data map[string]interface{}, err error) {
 	sess := session.Must(session.NewSession())
 	svc := dynamodb.New(sess)
 
 	tableName := os.Getenv("TABLE_NAME")
 	if tableName == "" {
-		return fmt.Errorf("TABLE_NAME environment variable is not set")
+		return "", nil, fmt.Errorf("TABLE_NAME environment variable is not set")
 	}
 
 	items := []QuestionItem{
@@ -38,7 +38,7 @@ func InsertData(ctx context.Context) error {
 	for _, item := range items {
 		av, err := dynamodbattribute.MarshalMap(item)
 		if err != nil {
-			return fmt.Errorf("failed to marshal item: %v", err)
+			return "", nil, fmt.Errorf("failed to marshal item: %v", err)
 		}
 
 		input := &dynamodb.PutItemInput{
@@ -48,11 +48,11 @@ func InsertData(ctx context.Context) error {
 
 		_, err = svc.PutItem(input)
 		if err != nil {
-			return fmt.Errorf("failed to put item: %v", err)
+			return "", nil, fmt.Errorf("failed to put item: %v", err)
 		}
 	}
 
-	return nil
+	return
 }
 
 func main() {
