@@ -5,6 +5,9 @@ on:
       - master
     paths-ignore:
       - "README.md"
+  pull_request:
+    branches:
+      - master
 permissions:
   id-token: write
   contents: read
@@ -25,5 +28,3 @@ jobs:
           AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
       - name: CDK Deploy
         run: npm run cdk:deploy
-        env:
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}

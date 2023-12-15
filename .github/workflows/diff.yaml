@@ -25,5 +25,3 @@
 #         run: npm run build
 #       - name: CDK Diff Check
 #         run: npm run cdk:diff
-#         env:
-#           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
