@@ -56,6 +56,6 @@
     "@aws-cdk/aws-appsync:useArnForSourceApiAssociationIdentifier": true,
     "@aws-cdk/aws-rds:preventRenderingDeprecatedCredentials": true,
     "@aws-cdk/aws-codepipeline-actions:useNewDefaultBranchForCodeCommitSource": true,
-	"@aws-cdk/core:bootstrapQualifier": "candle"
+    "@aws-cdk/core:bootstrapQualifier": "candle"
   }
 }
