@@ -51,6 +51,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	return events.APIGatewayProxyResponse{
 		Body:       string(responseBody),
 		StatusCode: http.StatusCreated,
+		Headers:    map[string]string{"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
 	}, nil
 }
 
@@ -62,6 +63,7 @@ func createEmptyResponseWithStatus(statuCode int) events.APIGatewayProxyResponse
 	return events.APIGatewayProxyResponse{
 		Body:       "",
 		StatusCode: statuCode,
+		Headers:    map[string]string{"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
 	}
 }
 
