@@ -15,13 +15,13 @@ import (
 )
 
 type Answer struct {
-	QuestionId string `json:"question_id"`
-	Answer     bool   `json:"answer"`
+	QuestionId string `json:"question_id" dynamodbav:"question_id"`
+	Answer     bool   `json:"answer" dynamodbav:"answer"`
 }
 type UserData struct {
-	UserId   string   `json:"uid"`
-	NickName string   `json:"nickname"`
-	Answers  []Answer `json:"answers"`
+	UserId   string   `json:"uid" dynamodbav:"user_id"`
+	NickName string   `json:"nickname" dynamodbav:"nickname"`
+	Answers  []Answer `json:"answers" dynamodbav:"answers"`
 }
 
 type requestBody struct {
