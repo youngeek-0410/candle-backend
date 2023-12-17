@@ -4,9 +4,11 @@ go 1.21
 
 require (
 	github.com/aws/aws-lambda-go v1.42.0
+	github.com/aws/aws-sdk-go v1.49.4
 	github.com/aws/aws-sdk-go-v2 v1.24.0
 	github.com/aws/aws-sdk-go-v2/config v1.26.1
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.26.6
+	github.com/google/uuid v1.5.0
 )
 
 require (
@@ -22,6 +24,5 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.26.5 // indirect
 	github.com/aws/smithy-go v1.19.0 // indirect
-	github.com/google/uuid v1.5.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 )

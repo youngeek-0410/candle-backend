@@ -21,6 +21,7 @@ type Answer struct {
 type UserData struct {
 	UserId   string   `json:"uid" dynamodbav:"user_id"`
 	NickName string   `json:"nickname" dynamodbav:"nickname"`
+	RoomName string   `json:"roomname" dynamodbav:"room_name"`
 	Answers  []Answer `json:"answers" dynamodbav:"answers"`
 }
 
@@ -47,6 +48,7 @@ func enterRoomHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	userData.UserId = userId.String()
 	userData.NickName = req.NickName
 	userData.Answers = req.Answers
+	userData.RoomName = roomId
 
 	// 書き込み処理
 	cfg, err := config.LoadDefaultConfig(ctx)
@@ -83,26 +85,30 @@ func insertUserDataToCandleBackendUserTable(cfg aws.Config, ctx context.Context,
 		tableName = t
 	}
 
-	var dynamoValue []types.AttributeValue
+	var answers []types.AttributeValue
 	for _, ans := range userData.Answers {
-		answerMap := map[string]types.AttributeValue{
+		ansMap := map[string]types.AttributeValue{
 			"question_id": &types.AttributeValueMemberS{Value: ans.QuestionId},
 			"answer":      &types.AttributeValueMemberBOOL{Value: ans.Answer},
 		}
-		dynamoValue = append(dynamoValue, &types.AttributeValueMemberM{Value: answerMap})
+		answers = append(answers, &types.AttributeValueMemberM{Value: ansMap})
 	}
 
-	_, err := svc.PutItem(ctx, &dynamodb.PutItemInput{
+	params := &dynamodb.PutItemInput{
 		TableName: aws.String(tableName),
 		Item: map[string]types.AttributeValue{
-			"user_id":  &types.AttributeValueMemberS{Value: userData.UserId},
-			"nickname": &types.AttributeValueMemberS{Value: userData.NickName},
-			"answers":  &types.AttributeValueMemberL{Value: dynamoValue},
-		}, ConditionExpression: aws.String("attribute_not_exists(nickname,answers)"),
-	})
+			"user_id":   &types.AttributeValueMemberS{Value: userData.UserId},
+			"nickname":  &types.AttributeValueMemberS{Value: userData.NickName},
+			"room_name": &types.AttributeValueMemberS{Value: userData.RoomName},
+			"answers":   &types.AttributeValueMemberL{Value: answers},
+		},
+	}
+
+	_, err := svc.PutItem(ctx, params)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
