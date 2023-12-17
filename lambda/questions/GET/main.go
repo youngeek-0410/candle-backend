@@ -5,17 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 )
 
 type Question struct {
-	QuestionID int `json:"question_id" dynamodbav:"question_id"`
-	Statement string `json:"statement" dynamodbav:"statement"`
+	QuestionID int    `json:"question_id" dynamodbav:"question_id"`
+	Statement  string `json:"statement" dynamodbav:"statement"`
 }
 
 type Response struct {
@@ -58,8 +59,8 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,
-		Body:		string(jsonResponse),
-		Headers:	map[string]string{"Content-Type": "application/json"},
+		Body:       string(jsonResponse),
+		Headers:    map[string]string{"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
 	}, nil
 }
 
@@ -67,11 +68,10 @@ func serverErrorResponse(err error) (events.APIGatewayProxyResponse, error) {
 	fmt.Println(err.Error())
 	return events.APIGatewayProxyResponse{
 		StatusCode: 500,
-		Body:		`{"message": "Internal Server Error"}`,
-		Headers:	map[string]string{"Content-Type": "application/json"},
+		Body:       `{"message": "Internal Server Error"}`,
+		Headers:    map[string]string{"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
 	}, nil
 }
-
 
 func main() {
 	lambda.Start(handler)

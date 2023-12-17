@@ -12,6 +12,11 @@ export class CandleBackendStack extends cdk.Stack {
     // Create API Gateway
     const api = new apigateway.RestApi(this, 'CandleBackendApi', {
       restApiName: 'CandleBackendApi',
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowHeaders: apigateway.Cors.DEFAULT_HEADERS,
+        allowMethods: apigateway.Cors.ALL_METHODS,
+      },
     });
 
     const questionTable = new cdk.aws_dynamodb.Table(this, 'CandleBackendQuestionTable', {
@@ -58,6 +63,7 @@ export class CandleBackendStack extends cdk.Stack {
         environment: {
           TABLE_NAME: questionTable.tableName,
         },
+        
     });
     questionTable.grantReadWriteData(questionsGETHandler);
     questions.addMethod('GET', new apigateway.LambdaIntegration(questionsGETHandler));
