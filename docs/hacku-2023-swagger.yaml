@@ -3,12 +3,14 @@ info:
   title: Candle Backend API
   version: 1.0.0
   description: API for creating and managing rooms.
+servers:
+  - url: https://3sj1jms0y7.execute-api.ap-northeast-1.amazonaws.com/prod
 paths:
   /questions:
     get:
       summary: Get questions
       responses:
-        '200':
+        "200":
           description: List of questions
           content:
             application/json:
@@ -32,7 +34,7 @@ paths:
                       statement: "誕生月は"
                     - question_id: 3
                       statement: "好きな果物は"
-        
+
   /room:
     post:
       summary: Create a new room
@@ -48,7 +50,7 @@ paths:
                   description: Room ID
                   example: youngeek
       responses:
-        '201':
+        "201":
           description: Room created successfully
           content:
             application/json:
@@ -58,9 +60,9 @@ paths:
                   room_id:
                     type: string
                     example: youngeek
-        '400':
+        "400":
           description: Invalid input
-        '409':
+        "409":
           description: Room is already in use
 
   /room/{room_id}:
@@ -98,7 +100,7 @@ paths:
                         type: boolean
                         description: Answer to the question
       responses:
-        '200':
+        "200":
           description: Entered the room successfully
           content:
             application/json:
@@ -108,11 +110,10 @@ paths:
                   user_id:
                     type: string
                     example: 0DF553D94DF68P
-        '400':
+        "400":
           description: Invalid input
-        '404':
+        "404":
           description: Room not found
-
 
   /room/{room_id}/start:
     get:
@@ -125,7 +126,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: user information including user id, role, and candle
           content:
             application/json:
@@ -143,13 +144,13 @@ paths:
                         type: string
                       statement:
                         type: string
-        '404':
+        "404":
           description: Room not found
   /{room_id}/result:
     get:
       summary: Get final results
       responses:
-        '200':
+        "200":
           description: Successfully retrieved results
           content:
             application/json:
@@ -175,7 +176,7 @@ paths:
                               type: string
                             is_santa:
                               type: boolean
-        '404':
+        "404":
           description: Results not found
     post:
       summary: Submit fire count for tallying
@@ -196,7 +197,7 @@ paths:
                   type: string
                   description: Unique identifier of the question
       responses:
-        '200':
+        "200":
           description: tallying successful
           content:
             application/json:
@@ -206,7 +207,7 @@ paths:
                   fired:
                     type: boolean
                     description: fired or non-fired?
-        '400':
+        "400":
           description: Invalid input
 components:
   schemas:
