@@ -81,7 +81,7 @@ func insertUserDataToCandleBackendUserTable(cfg aws.Config, ctx context.Context,
 	svc := dynamodb.NewFromConfig(cfg)
 
 	tableName := "CandleBackendUserTable"
-	if t, exists := os.LookupEnv("USER_ABLE_NAME"); exists {
+	if t, exists := os.LookupEnv("USER_TABLE_NAME"); exists {
 		tableName = t
 	}
 
