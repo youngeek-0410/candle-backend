@@ -116,7 +116,7 @@ paths:
           description: Room not found
 
   /room/{room_id}/start:
-    get:
+    post:
       summary: Start the room and distribute roles
       parameters:
         - name: room_id
@@ -125,6 +125,16 @@ paths:
           description: Unique identifier of the room
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                  example: 0DF553D94DF68P
       responses:
         "200":
           description: user information including user id, role, and candle
