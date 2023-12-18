@@ -204,6 +204,13 @@ paths:
   /room/{room_id}/result:
     post:
       summary: Submit fire count for tallying
+      parameters:
+        - name: room_id
+          in: path
+          required: true
+          description: Unique identifier of the room
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -211,10 +218,14 @@ paths:
             schema:
               type: object
               required:
-                - fired_user_id
+                - user_id
+                - fire_user_id
                 - question_id
               properties:
-                fired_user_id:
+                user_id:
+                  type: string
+                  description: Unique identifier of the user
+                fire_user_id:
                   type: string
                   description: Unique identifier of the user
                 question_id:
