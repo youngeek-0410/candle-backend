@@ -15,13 +15,13 @@ import (
 )
 
 type Answer struct {
-	QuestionId string `json:"question_id" dynamodbav:"question_id"`
+	QuestionID string `json:"question_id" dynamodbav:"question_id"`
 	Answer     bool   `json:"answer" dynamodbav:"answer"`
 }
 type UserData struct {
-	UserId   string   `json:"uid" dynamodbav:"user_id"`
-	NickName string   `json:"nickname" dynamodbav:"nickname"`
-	RoomName string   `json:"roomname" dynamodbav:"room_name"`
+	UserID   string `json:"user_id" dynamodbav:"user_id"`
+	NickName string `json:"nickname" dynamodbav:"nickname"`
+	RoomID   string   `json:"room_id" dynamodbav:"room_id"`
 	Answers  []Answer `json:"answers" dynamodbav:"answers"`
 }
 
@@ -45,10 +45,10 @@ func enterRoomHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	var userData UserData
 	userId := uuid.New()
 
-	userData.UserId = userId.String()
+	userData.UserID = userId.String()
 	userData.NickName = req.NickName
 	userData.Answers = req.Answers
-	userData.RoomName = roomId
+	userData.RoomID = roomId
 
 	// 書き込み処理
 	cfg, err := config.LoadDefaultConfig(ctx)
@@ -88,7 +88,7 @@ func insertUserDataToCandleBackendUserTable(cfg aws.Config, ctx context.Context,
 	var answers []types.AttributeValue
 	for _, ans := range userData.Answers {
 		ansMap := map[string]types.AttributeValue{
-			"question_id": &types.AttributeValueMemberS{Value: ans.QuestionId},
+			"question_id": &types.AttributeValueMemberS{Value: ans.QuestionID},
 			"answer":      &types.AttributeValueMemberBOOL{Value: ans.Answer},
 		}
 		answers = append(answers, &types.AttributeValueMemberM{Value: ansMap})
@@ -97,9 +97,9 @@ func insertUserDataToCandleBackendUserTable(cfg aws.Config, ctx context.Context,
 	params := &dynamodb.PutItemInput{
 		TableName: aws.String(tableName),
 		Item: map[string]types.AttributeValue{
-			"user_id":   &types.AttributeValueMemberS{Value: userData.UserId},
+			"user_id":   &types.AttributeValueMemberS{Value: userData.UserID},
 			"nickname":  &types.AttributeValueMemberS{Value: userData.NickName},
-			"room_name": &types.AttributeValueMemberS{Value: userData.RoomName},
+			"room_id": &types.AttributeValueMemberS{Value: userData.RoomID},
 			"answers":   &types.AttributeValueMemberL{Value: answers},
 		},
 	}
