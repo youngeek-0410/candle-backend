@@ -63,7 +63,7 @@ export class CandleBackendStack extends cdk.Stack {
         environment: {
           TABLE_NAME: questionTable.tableName,
         },
-
+        
     });
     questionTable.grantReadWriteData(questionsGETHandler);
     questions.addMethod('GET', new apigateway.LambdaIntegration(questionsGETHandler));
