@@ -27,7 +27,7 @@ type UserData struct {
 
 type RoomData struct {
 	RoomID       string   `json:"room_id" dynamodbav:"room_id"`
-	Participants []string `josn:"participants" dynamodbav:"participants"`
+	Participants []string `json:"participants" dynamodbav:"participants"`
 }
 
 func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -75,7 +75,9 @@ func getAllQuestionAnswers(cfg aws.Config, ctx context.Context, roomID string) (
 	}
 
 	var roomData RoomData
-	err = attributevalue.UnmarshalMap(response.Item, &roomData)
+	if err = attributevalue.UnmarshalMap(response.Item, &roomData); err != nil {
+		return RoomData{}, err
+	}
 
 	return roomData, nil
 }
