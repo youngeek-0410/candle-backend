@@ -13,10 +13,11 @@ type Response struct {
 }
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	fmt.Printf("room/{%s}/reult/%s\n", event.PathParameters["room_id"],event.HTTPMethod)
+	fmt.Printf("room/{%s}/reult/%s\n", event.PathParameters["room_id"], event.HTTPMethod)
 	return events.APIGatewayProxyResponse{
-		Body:       fmt.Sprintf("room/{%s}/result/%s", event.PathParameters["room_id"],event.HTTPMethod),
+		Body:       fmt.Sprintf("room/{%s}/result/%s", event.PathParameters["room_id"], event.HTTPMethod),
 		StatusCode: 200,
+		Headers:    map[string]string{"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
 	}, nil
 }
 
