@@ -59,7 +59,7 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 
 func getAllQuestionAnswers(cfg aws.Config, ctx context.Context, roomID string) (RoomData, error) {
 	svc := dynamodb.NewFromConfig(cfg)
-	tableName := "CandleBackendUserTable"
+	tableName := "CandleBackendRoomTable"
 	if t, exists := os.LookupEnv("USER_TABLE_NAME"); exists {
 		tableName = t
 	}
