@@ -25,6 +25,11 @@ type UserData struct {
 	Answers  []Answer `json:"answers" dynamodbav:"answers"`
 }
 
+type RoomData struct {
+	RoomID       string   `json:"room_id" dynamodbav:"room_id"`
+	Participants []string `josn:"participants" dynamodbav:"participants"`
+}
+
 func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	roomID := event.PathParameters["room_id"]
 	if roomID == "" {
@@ -52,38 +57,27 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	}, nil
 }
 
-func getAllQuestionAnswers(cfg aws.Config, ctx context.Context, roomID string) (*UserData, error) {
+func getAllQuestionAnswers(cfg aws.Config, ctx context.Context, roomID string) (RoomData, error) {
 	svc := dynamodb.NewFromConfig(cfg)
 	tableName := "CandleBackendUserTable"
 	if t, exists := os.LookupEnv("USER_TABLE_NAME"); exists {
 		tableName = t
 	}
 
-	key := map[string]types.AttributeValue{
-		"room_id": &types.AttributeValueMemberS{Value: roomID},
-	}
-
-	params := &dynamodb.GetItemInput{
+	response, err := svc.GetItem(ctx, &dynamodb.GetItemInput{
+		Key: map[string]types.AttributeValue{
+			"room_id": &types.AttributeValueMemberS{Value: roomID},
+		},
 		TableName: aws.String(tableName),
-		Key:       key,
-	}
-
-	allUserData, err := svc.GetItem(ctx, params)
+	})
 	if err != nil {
-		return nil, err
+		return RoomData{}, err
 	}
 
-	if allUserData.Item == nil {
-		return nil, err
-	}
+	var roomData RoomData
+	err = attributevalue.UnmarshalMap(response.Item, &roomData)
 
-	var results UserData
-	err = attributevalue.UnmarshalMap(allUserData.Item, &results)
-	if err != nil {
-		return nil, err
-	}
-
-	return &results, nil
+	return roomData, nil
 }
 
 func createEmptyResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
