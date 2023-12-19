@@ -1,4 +1,4 @@
-module room/room_id/result/user_id/GET
+module room/room_id/result/GET
 
 go 1.21
 
