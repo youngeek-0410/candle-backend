@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -41,9 +42,14 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 		createEmptyResponseWithStatus(500, "Internal server error")
 	}
 
-	result, err := getAllQuestionAnswers(cfg, ctx, roomID)
+	roomResult, err := getAllQuestionAnswers(cfg, ctx, roomID)
 	if err != nil {
 		createEmptyResponseWithStatus(500, "DB get error")
+	}
+
+	result, err := getAllUserData(cfg, ctx, roomResult.Participants)
+	if err != nil {
+		createEmptyResponseWithStatus(500, err.Error())
 	}
 
 	jsonResult, err := json.Marshal(result)
@@ -80,6 +86,40 @@ func getAllQuestionAnswers(cfg aws.Config, ctx context.Context, roomID string) (
 	}
 
 	return roomData, nil
+}
+
+func getAllUserData(cfg aws.Config, ctx context.Context, userIDList []string) ([]UserData, error) {
+	svc := dynamodb.NewFromConfig(cfg)
+	tableName := "CandleBackendUserTable"
+	if t, exists := os.LookupEnv("USER_TABLE_NAME"); exists {
+		tableName = t
+	}
+
+	var allUserInfo []UserData
+	var userInfo UserData
+	for _, userID := range userIDList {
+		response, err := svc.GetItem(ctx, &dynamodb.GetItemInput{
+			Key: map[string]types.AttributeValue{
+				"user_id": &types.AttributeValueMemberS{Value: userID},
+			},
+			TableName: aws.String(tableName),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if response.Item == nil {
+			return nil, errors.New("User data response is empty")
+		}
+		if err = attributevalue.UnmarshalMap(response.Item, &userInfo); err != nil {
+			return nil, err
+		}
+
+		allUserInfo = append(allUserInfo, userInfo)
+	}
+
+	return allUserInfo, nil
+
 }
 
 func createEmptyResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
