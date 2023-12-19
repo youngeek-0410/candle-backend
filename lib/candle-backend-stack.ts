@@ -46,7 +46,7 @@ export class CandleBackendStack extends cdk.Stack {
           'bash', '-c', [
             "export GOCACHE=/tmp/go-cache",
             "export GOPATH=/tmp/go-path",
-            "CGO_ENABLED=0 GOOS=linux go build -tags lambda.norpc -o /asset-output/bootstrap main.go",
+            "GOARCH=amd64 CGO_ENABLED=0 GOOS=linux go build -tags lambda.norpc -o /asset-output/bootstrap main.go",
           ].join(" && "),
         ],
       },
