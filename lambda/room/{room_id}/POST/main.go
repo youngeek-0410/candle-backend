@@ -64,6 +64,11 @@ func enterRoomHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	if err != nil {
 		createEmptyResponseWithStatus(500, "JSON parse error.")
 	}
+
+	if err = insertUserIDToRoomTableParticipantsColumn(cfg, ctx, userData); err != nil {
+		createEmptyResponseWithStatus(500, "DB write error")
+	}
+
 	return events.APIGatewayProxyResponse{
 		Body:       string(jsonUserData),
 		StatusCode: http.StatusOK,
@@ -112,6 +117,58 @@ func insertUserDataToCandleBackendUserTable(cfg aws.Config, ctx context.Context,
 	}
 
 	return nil
+}
+
+func insertUserIDToRoomTableParticipantsColumn(cfg aws.Config, ctx context.Context, user UserData) error {
+	svc := dynamodb.NewFromConfig(cfg)
+
+	getItemOutput, err := svc.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: aws.String("CandleBackendRoomTable"),
+		Key: map[string]types.AttributeValue{
+			"room_id": &types.AttributeValueMemberS{Value: user.RoomID},
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	var participants []string
+	if attr,found := getItemOutput.Item["participants"];found{
+		if attrList,ok := attr.(*types.AttributeValueMemberL);ok{
+			for _,v := range attrList.Value{
+				if s, ok := v.(*types.AttributeValueMemberS);ok{
+					participants = append(participants,s.Value)
+				}
+			}
+		}
+	}
+
+	participants = append(participants, user.UserID)
+
+	_, err = svc.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+		TableName: aws.String("CandleBackendRoomTable"),
+		Key: map[string]types.AttributeValue{
+			"room_id": &types.AttributeValueMemberS{Value: user.RoomID},
+		},
+		UpdateExpression: aws.String("SET participants = :participants"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":participants": &types.AttributeValueMemberL{
+				Value: buildAttributeValueList(participants),
+			},
+		},
+	})
+	if err!=nil{
+		return  err
+	}
+
+	return nil
+}
+func buildAttributeValueList(values []string) []types.AttributeValue {
+	var attributeList []types.AttributeValue
+	for _, value := range values {
+		attributeList = append(attributeList, &types.AttributeValueMemberS{Value: value})
+	}
+	return attributeList
 }
 
 func main() {
