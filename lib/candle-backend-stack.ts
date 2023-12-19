@@ -147,6 +147,9 @@ export class CandleBackendStack extends cdk.Stack {
       runtime: lambda.Runtime.PROVIDED_AL2,
       handler: 'bootstrap',
       code: lambda.Code.fromAsset('lambda/room/{room_id}/result/POST',goLambdaBundleConfig),
+      environment: {
+        TABLE_NAME: userTable.tableName,
+      },
     });
     roomTable.grantReadWriteData(roomIdResultPOSTHandler);
     userTable.grantReadWriteData(roomIdResultPOSTHandler);

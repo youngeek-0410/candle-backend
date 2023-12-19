@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"os"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -10,8 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/google/uuid"
-	"net/http"
-	"os"
 )
 
 type Answer struct {
@@ -19,8 +20,8 @@ type Answer struct {
 	Answer     bool   `json:"answer" dynamodbav:"answer"`
 }
 type UserData struct {
-	UserID   string `json:"user_id" dynamodbav:"user_id"`
-	NickName string `json:"nickname" dynamodbav:"nickname"`
+	UserID   string   `json:"user_id" dynamodbav:"user_id"`
+	NickName string   `json:"nickname" dynamodbav:"nickname"`
 	RoomID   string   `json:"room_id" dynamodbav:"room_id"`
 	Answers  []Answer `json:"answers" dynamodbav:"answers"`
 }
@@ -97,10 +98,10 @@ func insertUserDataToCandleBackendUserTable(cfg aws.Config, ctx context.Context,
 	params := &dynamodb.PutItemInput{
 		TableName: aws.String(tableName),
 		Item: map[string]types.AttributeValue{
-			"user_id":   &types.AttributeValueMemberS{Value: userData.UserID},
-			"nickname":  &types.AttributeValueMemberS{Value: userData.NickName},
-			"room_id": &types.AttributeValueMemberS{Value: userData.RoomID},
-			"answers":   &types.AttributeValueMemberL{Value: answers},
+			"user_id":  &types.AttributeValueMemberS{Value: userData.UserID},
+			"nickname": &types.AttributeValueMemberS{Value: userData.NickName},
+			"room_id":  &types.AttributeValueMemberS{Value: userData.RoomID},
+			"answers":  &types.AttributeValueMemberL{Value: answers},
 		},
 	}
 
