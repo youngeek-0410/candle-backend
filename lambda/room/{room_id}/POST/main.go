@@ -67,6 +67,7 @@ func enterRoomHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	return events.APIGatewayProxyResponse{
 		Body:       string(jsonUserData),
 		StatusCode: http.StatusOK,
+		Headers:    map[string]string{"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
 	}, nil
 }
 
@@ -74,6 +75,7 @@ func createEmptyResponseWithStatus(statusCode int, responseMessage string) (even
 	return events.APIGatewayProxyResponse{
 		Body:       responseMessage,
 		StatusCode: statusCode,
+		Headers:    map[string]string{"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
 	}, nil
 }
 

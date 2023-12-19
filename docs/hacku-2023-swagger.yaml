@@ -4,7 +4,8 @@ info:
   version: 1.0.0
   description: API for creating and managing rooms.
 servers:
-  - url: https://3sj1jms0y7.execute-api.ap-northeast-1.amazonaws.com/prod
+  - url: https://ehdkqepk7h.execute-api.ap-northeast-1.amazonaws.com/prod
+    description: Production server (@kathmandu777)
 paths:
   /questions:
     get:
