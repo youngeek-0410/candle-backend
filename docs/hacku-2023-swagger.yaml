@@ -156,7 +156,7 @@ paths:
                         type: string
         "404":
           description: Room not found
-  /room/{room_id}/result/{user_id}:
+  /room/{room_id}/result:
     get:
       summary: Get final results
       parameters:
@@ -201,7 +201,6 @@ paths:
                               type: boolean
         "404":
           description: Results not found
-  /room/{room_id}/result:
     post:
       summary: Submit fire count for tallying
       parameters:
