@@ -95,7 +95,7 @@ paths:
                       - answer
                     properties:
                       question_id:
-                        type: string
+                        type: integer
                         description: Unique identifier of the question
                       answer:
                         type: boolean
@@ -180,25 +180,20 @@ paths:
                 properties:
                   result:
                     type: boolean
-                    description: Santa won or the citizens won
-                  candles:
-                    type: array
-                    description: Number of fired candles
-                    items:
-                      type: object
-                      properties:
-                        candle_id:
-                          type: string
-                          description: candle id
-                        user:
-                          type: object
-                          properties:
-                            user_name:
-                              type: string
-                            is_santa:
-                              type: boolean
+                    description: Citizen won or not
+                  is_igniter_santa:
+                    type: boolean
+                    description: Igniter is santa or not
+                  is_player_santa:
+                    type: boolean
+                    description: Player is santa or not
+                  ignited_by:
+                    type: string
+                    description: ignited user id
+        "202":
+          description: RoomId is correct, but still in tallying
         "404":
-          description: Results not found
+          description: Room not found
   /room/{room_id}/result:
     post:
       summary: Submit fire count for tallying
@@ -227,7 +222,7 @@ paths:
                   type: string
                   description: Unique identifier of the user
                 question_id:
-                  type: string
+                  type: integer
                   description: Unique identifier of the question
       responses:
         "200":

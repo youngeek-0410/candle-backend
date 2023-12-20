@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"os"
+	"strconv"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -10,17 +14,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/google/uuid"
-	"net/http"
-	"os"
 )
 
 type Answer struct {
-	QuestionID string `json:"question_id" dynamodbav:"question_id"`
-	Answer     bool   `json:"answer" dynamodbav:"answer"`
+	QuestionID int  `json:"question_id" dynamodbav:"question_id"`
+	Answer     bool `json:"answer" dynamodbav:"answer"`
 }
 type UserData struct {
-	UserID   string `json:"user_id" dynamodbav:"user_id"`
-	NickName string `json:"nickname" dynamodbav:"nickname"`
+	UserID   string   `json:"user_id" dynamodbav:"user_id"`
+	NickName string   `json:"nickname" dynamodbav:"nickname"`
 	RoomID   string   `json:"room_id" dynamodbav:"room_id"`
 	Answers  []Answer `json:"answers" dynamodbav:"answers"`
 }
@@ -34,6 +36,19 @@ func enterRoomHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	roomId := event.PathParameters["room_id"]
 	if roomId == "" {
 		return createEmptyResponseWithStatus(400, "Incorrect path parameter")
+	}
+
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		createEmptyResponseWithStatus(500, "")
+	}
+	// room が存在するかの確認
+	ok, err := existRoom(ctx, cfg, roomId)
+	if err != nil {
+		return createEmptyResponseWithStatus(500, "Could not get the room")
+	}
+	if !ok {
+		return createEmptyResponseWithStatus(404, "room not found")
 	}
 
 	var req requestBody
@@ -51,11 +66,6 @@ func enterRoomHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	userData.RoomID = roomId
 
 	// 書き込み処理
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		createEmptyResponseWithStatus(500, "")
-	}
-
 	if err = insertUserDataToCandleBackendUserTable(cfg, ctx, userData); err != nil {
 		createEmptyResponseWithStatus(500, "Data write error.")
 	}
@@ -95,7 +105,7 @@ func insertUserDataToCandleBackendUserTable(cfg aws.Config, ctx context.Context,
 	var answers []types.AttributeValue
 	for _, ans := range userData.Answers {
 		ansMap := map[string]types.AttributeValue{
-			"question_id": &types.AttributeValueMemberS{Value: ans.QuestionID},
+			"question_id": &types.AttributeValueMemberN{Value: strconv.Itoa(ans.QuestionID)},
 			"answer":      &types.AttributeValueMemberBOOL{Value: ans.Answer},
 		}
 		answers = append(answers, &types.AttributeValueMemberM{Value: ansMap})
@@ -104,10 +114,10 @@ func insertUserDataToCandleBackendUserTable(cfg aws.Config, ctx context.Context,
 	params := &dynamodb.PutItemInput{
 		TableName: aws.String(tableName),
 		Item: map[string]types.AttributeValue{
-			"user_id":   &types.AttributeValueMemberS{Value: userData.UserID},
-			"nickname":  &types.AttributeValueMemberS{Value: userData.NickName},
-			"room_id": &types.AttributeValueMemberS{Value: userData.RoomID},
-			"answers":   &types.AttributeValueMemberL{Value: answers},
+			"user_id":  &types.AttributeValueMemberS{Value: userData.UserID},
+			"nickname": &types.AttributeValueMemberS{Value: userData.NickName},
+			"room_id":  &types.AttributeValueMemberS{Value: userData.RoomID},
+			"answers":  &types.AttributeValueMemberL{Value: answers},
 		},
 	}
 
@@ -133,11 +143,11 @@ func insertUserIDToRoomTableParticipantsColumn(cfg aws.Config, ctx context.Conte
 	}
 
 	var participants []string
-	if attr,found := getItemOutput.Item["participants"];found{
-		if attrList,ok := attr.(*types.AttributeValueMemberL);ok{
-			for _,v := range attrList.Value{
-				if s, ok := v.(*types.AttributeValueMemberS);ok{
-					participants = append(participants,s.Value)
+	if attr, found := getItemOutput.Item["participants"]; found {
+		if attrList, ok := attr.(*types.AttributeValueMemberL); ok {
+			for _, v := range attrList.Value {
+				if s, ok := v.(*types.AttributeValueMemberS); ok {
+					participants = append(participants, s.Value)
 				}
 			}
 		}
@@ -157,8 +167,8 @@ func insertUserIDToRoomTableParticipantsColumn(cfg aws.Config, ctx context.Conte
 			},
 		},
 	})
-	if err!=nil{
-		return  err
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -169,6 +179,20 @@ func buildAttributeValueList(values []string) []types.AttributeValue {
 		attributeList = append(attributeList, &types.AttributeValueMemberS{Value: value})
 	}
 	return attributeList
+}
+
+func existRoom(ctx context.Context, cfg aws.Config, roomID string) (bool, error) {
+	svc := dynamodb.NewFromConfig(cfg)
+	result, err := svc.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: aws.String("CandleBackendRoomTable"),
+		Key: map[string]types.AttributeValue{
+			"room_id": &types.AttributeValueMemberS{Value: roomID},
+		},
+	})
+	if result.Item["room_id"] == nil {
+		return false, err
+	}
+	return true, err
 }
 
 func main() {

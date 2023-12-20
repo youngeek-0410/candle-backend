@@ -135,11 +135,11 @@ export class CandleBackendStack extends cdk.Stack {
       functionName: 'RoomIdResultGETHandler',
       runtime: lambda.Runtime.PROVIDED_AL2,
       handler: 'bootstrap',
-      code: lambda.Code.fromAsset('lambda/room/{room_id}/result/GET',goLambdaBundleConfig),
+      code: lambda.Code.fromAsset('lambda/room/{room_id}/result/{user_id}/GET',goLambdaBundleConfig),
     });
     roomTable.grantReadWriteData(roomIdResultGETHandler);
     userTable.grantReadWriteData(roomIdResultGETHandler);
-    result.addMethod('GET', new apigateway.LambdaIntegration(roomIdResultGETHandler))
+    result.addResource("{user_id}").addMethod('GET', new apigateway.LambdaIntegration(roomIdResultGETHandler))
 
     //room/{room_id}/result:POST
     const roomIdResultPOSTHandler = new lambda.Function(this, 'CandleBackendRoomIdResultPOSTHandler', {
@@ -147,6 +147,9 @@ export class CandleBackendStack extends cdk.Stack {
       runtime: lambda.Runtime.PROVIDED_AL2,
       handler: 'bootstrap',
       code: lambda.Code.fromAsset('lambda/room/{room_id}/result/POST',goLambdaBundleConfig),
+      environment: {
+        TABLE_NAME: userTable.tableName,
+      },
     });
     roomTable.grantReadWriteData(roomIdResultPOSTHandler);
     userTable.grantReadWriteData(roomIdResultPOSTHandler);
