@@ -157,7 +157,7 @@ paths:
                         type: string
         "404":
           description: Room not found
-  /room/{room_id}/result/{user_id}:
+  /room/{room_id}/result:
     get:
       summary: Get final results
       parameters:
@@ -184,25 +184,8 @@ paths:
                   result:
                     type: boolean
                     description: Santa won or the citizens won
-                  candles:
-                    type: array
-                    description: Number of fired candles
-                    items:
-                      type: object
-                      properties:
-                        candle_id:
-                          type: string
-                          description: candle id
-                        user:
-                          type: object
-                          properties:
-                            user_name:
-                              type: string
-                            is_santa:
-                              type: boolean
         "404":
           description: Results not found
-  /room/{room_id}/result:
     post:
       summary: Submit fire count for tallying
       parameters:
