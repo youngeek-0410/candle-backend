@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -90,9 +88,9 @@ func getAllUserData(cfg aws.Config, ctx context.Context, userIDList []string) ([
 	return allUserInfo, nil
 
 }
-func AggregateQuestionAnswersFromAllUsers(userData []UserData) map[string]int {
+func AggregateQuestionAnswersFromAllUsers(allUserData []UserData) map[string]int {
 	totalCount := make(map[string]int)
-	for _, user := range userData {
+	for _, user := range allUserData {
 		for _, ans := range user.Answers {
 			key := ans.QuestionID
 			if ans.Answer {
@@ -102,9 +100,9 @@ func AggregateQuestionAnswersFromAllUsers(userData []UserData) map[string]int {
 	}
 	return totalCount
 }
-func CalculateFalseForEachUser(userData []UserData) map[string]int {
+func CalculateFalseForEachUser(allUserData []UserData) map[string]int {
 	totalCount := make(map[string]int)
-	for _, user := range userData {
+	for _, user := range allUserData {
 		for _, ans := range user.Answers {
 			if !ans.Answer {
 				totalCount[user.UserID]++
@@ -142,17 +140,12 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 		return createErrorResponseWithStatus(500, err.Error())
 	}
 
-	results := AggregateQuestionAnswersFromAllUsers(allUserData)
-	final, err := json.Marshal(results)
-	if err != nil {
-		return createErrorResponseWithStatus(500, err.Error())
-	}
+	aggregateQuestionResults := AggregateQuestionAnswersFromAllUsers(allUserData)
 
 	eachUserFalseCount := CalculateFalseForEachUser(allUserData)
-	fmt.Println(eachUserFalseCount)
 
 	return events.APIGatewayProxyResponse{
-		Body:       string(final),
+		Body:       string("test"),
 		StatusCode: 200,
 	}, nil
 }
