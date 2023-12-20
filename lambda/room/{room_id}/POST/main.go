@@ -37,6 +37,19 @@ func enterRoomHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 		return createEmptyResponseWithStatus(400, "Incorrect path parameter")
 	}
 
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		createEmptyResponseWithStatus(500, "")
+	}
+	// room が存在するかの確認
+	ok, err := existRoom(ctx, cfg, roomId)
+	if err != nil {
+		return createEmptyResponseWithStatus(500, "Could not get the room")
+	}
+	if !ok {
+		return createEmptyResponseWithStatus(404, "room not found")
+	}
+
 	var req requestBody
 	if err := json.Unmarshal([]byte(event.Body), &req); err != nil {
 		return createEmptyResponseWithStatus(500, "JSON parse error")
@@ -52,11 +65,6 @@ func enterRoomHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	userData.RoomID = roomId
 
 	// 書き込み処理
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		createEmptyResponseWithStatus(500, "")
-	}
-
 	if err = insertUserDataToCandleBackendUserTable(cfg, ctx, userData); err != nil {
 		createEmptyResponseWithStatus(500, "Data write error.")
 	}
@@ -134,11 +142,11 @@ func insertUserIDToRoomTableParticipantsColumn(cfg aws.Config, ctx context.Conte
 	}
 
 	var participants []string
-	if attr,found := getItemOutput.Item["participants"];found{
-		if attrList,ok := attr.(*types.AttributeValueMemberL);ok{
-			for _,v := range attrList.Value{
-				if s, ok := v.(*types.AttributeValueMemberS);ok{
-					participants = append(participants,s.Value)
+	if attr, found := getItemOutput.Item["participants"]; found {
+		if attrList, ok := attr.(*types.AttributeValueMemberL); ok {
+			for _, v := range attrList.Value {
+				if s, ok := v.(*types.AttributeValueMemberS); ok {
+					participants = append(participants, s.Value)
 				}
 			}
 		}
@@ -158,8 +166,8 @@ func insertUserIDToRoomTableParticipantsColumn(cfg aws.Config, ctx context.Conte
 			},
 		},
 	})
-	if err!=nil{
-		return  err
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -170,6 +178,20 @@ func buildAttributeValueList(values []string) []types.AttributeValue {
 		attributeList = append(attributeList, &types.AttributeValueMemberS{Value: value})
 	}
 	return attributeList
+}
+
+func existRoom(ctx context.Context, cfg aws.Config, roomID string) (bool, error) {
+	svc := dynamodb.NewFromConfig(cfg)
+	result, err := svc.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: aws.String("CandleBackendRoomTable"),
+		Key: map[string]types.AttributeValue{
+			"room_id": &types.AttributeValueMemberS{Value: roomID},
+		},
+	})
+	if result.Item["room_id"] == nil {
+		return false, err
+	}
+	return true, err
 }
 
 func main() {
