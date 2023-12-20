@@ -100,27 +100,27 @@ func createEmptyResponseWithStatus(statusCode int, responseMessage string) (even
 func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	roomID := event.PathParameters["room_id"]
 	if roomID == "" {
-		createEmptyResponseWithStatus(400, "Incorrect path parameter")
+		return createEmptyResponseWithStatus(400, "Incorrect path parameter")
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		createEmptyResponseWithStatus(500, "Internal server error")
+		return createEmptyResponseWithStatus(500, "Internal server error")
 	}
 
 	roomResult, err := getAllQuestionAnswers(cfg, ctx, roomID)
 	if err != nil {
-		createEmptyResponseWithStatus(500, "DB get error")
+		return createEmptyResponseWithStatus(500, "DB get error")
 	}
 
 	result, err := getAllUserData(cfg, ctx, roomResult.Participants)
 	if err != nil {
-		createEmptyResponseWithStatus(500, err.Error())
+		return createEmptyResponseWithStatus(500, err.Error())
 	}
 
 	jsonResult, err := json.Marshal(result)
 	if err != nil {
-		createEmptyResponseWithStatus(500, "JSON parse error")
+		return createEmptyResponseWithStatus(500, "JSON parse error")
 	}
 
 	return events.APIGatewayProxyResponse{
