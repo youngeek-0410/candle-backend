@@ -89,6 +89,7 @@ func getAllUserData(cfg aws.Config, ctx context.Context, userIDList []string) ([
 
 }
 func AggregateQuestionAnswersFromAllUsers(allUserData []UserData) map[string]int {
+	//keyをquestion_id、valueをユーザーの回答がTrueの数として計算する関数
 	totalCount := make(map[string]int)
 	for _, user := range allUserData {
 		for _, ans := range user.Answers {
@@ -100,16 +101,34 @@ func AggregateQuestionAnswersFromAllUsers(allUserData []UserData) map[string]int
 	}
 	return totalCount
 }
-func CalculateFalseForEachUser(allUserData []UserData) map[string]int {
-	totalCount := make(map[string]int)
+func ReturnSantaCandidateList(allUserData []UserData) []string {
+	//サンタ疑惑のあるユーザーリストの返却
+	falseCountByUser := make(map[string]int)
 	for _, user := range allUserData {
 		for _, ans := range user.Answers {
 			if !ans.Answer {
-				totalCount[user.UserID]++
+				falseCountByUser[user.UserID]++
 			}
 		}
 	}
-	return totalCount
+	var santaCandidateList []string
+	var maxFalseCount int
+	maxFalseCount = -1
+
+	for userName, userFalseCount := range falseCountByUser {
+		if userFalseCount > maxFalseCount {
+			santaCandidateList = []string{userName}
+			maxFalseCount = userFalseCount
+		} else if userFalseCount == maxFalseCount {
+			santaCandidateList = append(santaCandidateList, userName)
+		}
+	}
+	return santaCandidateList
+}
+
+func CandleAndSantaDecisionLogic(santaCandidateList []string, listOfTrueEachQuestion map[string], allUserData []UserData) {
+	//各サンタ候補がFalseと答えたquestionを格納しておく
+	var FalseAnsListForSantaCandidates map[string][]string
 }
 
 func createErrorResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
