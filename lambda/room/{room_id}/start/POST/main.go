@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -31,7 +32,7 @@ type RoomData struct {
 	Participants []string `json:"participants" dynamodbav:"participants"`
 }
 
-func getAllQuestionAnswers(cfg aws.Config, ctx context.Context, roomID string) (RoomData, error) {
+func getRoomData(cfg aws.Config, ctx context.Context, roomID string) (RoomData, error) {
 	svc := dynamodb.NewFromConfig(cfg)
 	tableName := "CandleBackendRoomTable"
 	if t, exists := os.LookupEnv("USER_TABLE_NAME"); exists {
@@ -101,6 +102,17 @@ func AggregateQuestionAnswersFromAllUsers(userData []UserData) map[string]int {
 	}
 	return totalCount
 }
+func CalculateFalseForEachUser(userData []UserData) map[string]int {
+	totalCount := make(map[string]int)
+	for _, user := range userData {
+		for _, ans := range user.Answers {
+			if !ans.Answer {
+				totalCount[user.UserID]++
+			}
+		}
+	}
+	return totalCount
+}
 
 func createErrorResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{
@@ -120,21 +132,24 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 		return createErrorResponseWithStatus(500, "Internal server error")
 	}
 
-	roomResult, err := getAllQuestionAnswers(cfg, ctx, roomID)
+	roomResult, err := getRoomData(cfg, ctx, roomID)
 	if err != nil {
 		return createErrorResponseWithStatus(500, "DB get error")
 	}
 
-	result, err := getAllUserData(cfg, ctx, roomResult.Participants)
+	allUserData, err := getAllUserData(cfg, ctx, roomResult.Participants)
 	if err != nil {
 		return createErrorResponseWithStatus(500, err.Error())
 	}
 
-	results := AggregateQuestionAnswersFromAllUsers(result)
+	results := AggregateQuestionAnswersFromAllUsers(allUserData)
 	final, err := json.Marshal(results)
 	if err != nil {
 		return createErrorResponseWithStatus(500, err.Error())
 	}
+
+	eachUserFalseCount := CalculateFalseForEachUser(allUserData)
+	fmt.Println(eachUserFalseCount)
 
 	return events.APIGatewayProxyResponse{
 		Body:       string(final),
