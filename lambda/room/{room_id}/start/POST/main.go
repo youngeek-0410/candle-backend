@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -11,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"os"
-	"strings"
 )
 
 type Answer struct {
@@ -115,6 +115,29 @@ func ReturnSantaCandidateList(users []UserData) []string {
 	return santaCandidateList
 }
 
+func returnNumberOfTrueForEachQuestion(userData []UserData) map[string]int {
+	totalCount := make(map[string]int)
+	for _, user := range userData {
+		for _, ans := range user.Answers {
+			key := ans.QuestionID
+			if ans.Answer {
+				totalCount[key]++
+			}
+		}
+	}
+	return totalCount
+}
+
+//func DecidingSantaAndQuestion(santaCandidateList []string, allUserData []UserData) {
+//	trueQueMap := returnNumberOfTrueForEachQuestion(allUserData)
+//	fmt.Println(trueQueMap)
+//}
+
+func DecidingSantaAndQuestion(allUserData []UserData) {
+	trueQueMap := returnNumberOfTrueForEachQuestion(allUserData)
+	fmt.Println(trueQueMap)
+}
+
 func createErrorResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{
 		Body:       responseMessage,
@@ -143,11 +166,12 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 		return createErrorResponseWithStatus(500, err.Error())
 	}
 
-	test := ReturnSantaCandidateList(allUserData)
-	result := strings.Join(test, " ")
+	//santaCandidateList := ReturnSantaCandidateList(allUserData)
+	_ = ReturnSantaCandidateList(allUserData)
+	DecidingSantaAndQuestion(allUserData)
 
 	return events.APIGatewayProxyResponse{
-		Body:       result,
+		Body:       "ok",
 		StatusCode: 200,
 	}, nil
 }
