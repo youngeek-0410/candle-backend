@@ -89,6 +89,18 @@ func getAllUserData(cfg aws.Config, ctx context.Context, userIDList []string) ([
 	return allUserInfo, nil
 
 }
+func AggregateQuestionAnswersFromAllUsers(userData []UserData) map[string]int {
+	totalCount := make(map[string]int)
+	for _, user := range userData {
+		for _, ans := range user.Answers {
+			key := ans.QuestionID
+			if ans.Answer {
+				totalCount[key]++
+			}
+		}
+	}
+	return totalCount
+}
 
 func createErrorResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{
@@ -118,13 +130,14 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 		return createErrorResponseWithStatus(500, err.Error())
 	}
 
-	jsonResult, err := json.Marshal(result)
+	results := AggregateQuestionAnswersFromAllUsers(result)
+	final, err := json.Marshal(results)
 	if err != nil {
-		return createErrorResponseWithStatus(500, "JSON parse error")
+		return createErrorResponseWithStatus(500, err.Error())
 	}
 
 	return events.APIGatewayProxyResponse{
-		Body:       string(jsonResult),
+		Body:       string(final),
 		StatusCode: 200,
 	}, nil
 }
