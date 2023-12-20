@@ -2,6 +2,7 @@
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import { CandleBackendStack } from '../lib/candle-backend-stack';
+import {CandleBackendWebSocketServerStack} from '../lib/websocket-server-stack';
 
 const app = new cdk.App();
 new CandleBackendStack(app, 'CandleBackendStack', {
@@ -22,4 +23,10 @@ new CandleBackendStack(app, 'CandleBackendStack', {
   synthesizer: new cdk.DefaultStackSynthesizer({
 		  qualifier: 'candle',
 	  }),
+});
+
+new CandleBackendWebSocketServerStack(app, 'CandleBackendWebSocketServerStack', {
+  synthesizer: new cdk.DefaultStackSynthesizer({
+      qualifier: 'candle',
+  }),
 });
