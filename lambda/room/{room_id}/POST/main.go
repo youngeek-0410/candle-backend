@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -16,8 +17,8 @@ import (
 )
 
 type Answer struct {
-	QuestionID string `json:"question_id" dynamodbav:"question_id"`
-	Answer     bool   `json:"answer" dynamodbav:"answer"`
+	QuestionID int  `json:"question_id" dynamodbav:"question_id"`
+	Answer     bool `json:"answer" dynamodbav:"answer"`
 }
 type UserData struct {
 	UserID   string   `json:"user_id" dynamodbav:"user_id"`
@@ -104,7 +105,7 @@ func insertUserDataToCandleBackendUserTable(cfg aws.Config, ctx context.Context,
 	var answers []types.AttributeValue
 	for _, ans := range userData.Answers {
 		ansMap := map[string]types.AttributeValue{
-			"question_id": &types.AttributeValueMemberS{Value: ans.QuestionID},
+			"question_id": &types.AttributeValueMemberN{Value: strconv.Itoa(ans.QuestionID)},
 			"answer":      &types.AttributeValueMemberBOOL{Value: ans.Answer},
 		}
 		answers = append(answers, &types.AttributeValueMemberM{Value: ansMap})
