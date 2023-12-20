@@ -116,12 +116,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		UpdateExpression: aws.String("set fire = :f, fired_by = :u"),
 		ExpressionAttributeValues: map[string]types.AttributeValue{
 			":f": &types.AttributeValueMemberBOOL{Value: is_fire},
-			":u": &types.AttributeValueMemberM{
-				Value: map[string]types.AttributeValue{
-					"user_id":  &types.AttributeValueMemberS{Value: fireUser.UserID},
-					"nickname": &types.AttributeValueMemberS{Value: fireUser.Nickname},
-					"is_santa": &types.AttributeValueMemberBOOL{Value: fireUser.IsSanta}},
-			},
+			":u": &types.AttributeValueMemberS{Value: fireUser.UserID},
 		},
 	})
 	if err != nil {
