@@ -157,7 +157,7 @@ paths:
                         type: string
         "404":
           description: Room not found
-  /room/{room_id}/result:
+  /room/{room_id}/result/{user_id}:
     get:
       summary: Get final results
       parameters:
@@ -184,11 +184,20 @@ paths:
                   result:
                     type: boolean
                     description: Citizen won or not
+                  is_igniter_santa:
+                    type: boolean
+                    description: Igniter is santa or not
+                  is_player_santa:
+                    type: boolean
+                    description: Player is santa or not
+                  ignited_by:
+                    type: string
+                    description: ignited user id
         "202":
           description: RoomId is correct, but still in tallying
         "404":
           description: Room not found
-
+  /room/{room_id}/result:
     post:
       summary: Submit fire count for tallying
       parameters:

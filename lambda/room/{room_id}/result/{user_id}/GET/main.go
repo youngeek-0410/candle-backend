@@ -17,7 +17,10 @@ import (
 )
 
 type response struct {
-	Result bool `json:"result"`
+	Result         bool   `json:"result"`
+	IsIgniterSanta bool   `json:"is_igniter_santa"`
+	IsPlayerSanta  bool   `json:"is_player_santa"`
+	IgnitedBy      string `json:"ignited_by"`
 }
 type room struct {
 	RoomId       string   `json:"room_id" dynamodbav:"room_id"`
@@ -28,6 +31,8 @@ type user struct {
 	Nickname string   `json:"nickname" dynamodbav:"nickname"`
 	RoomId   string   `json:"room_id" dynamodbav:"room_id"`
 	Fired    bool     `json:"fired" dynamodbav:"fired"`
+	IsSanta  bool     `json:"is_santa" dynamodbav:"is_santa"`
+	FiredBy  string   `json:"fired_by" dynamodbav:"fired_by"`
 	Answers  []answer `json:"answers" dynamodbav:"answers"`
 }
 type answer struct {
@@ -41,6 +46,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	const roomTableName = "CandleBackendRoomTable" // || os.LookupEnv("ROOM_TABLE_NAME")
 	const userTableName = "CandleBackendUserTable" // || os.LookupEnv("USER_TABLE_NAME")
 	roomId := event.PathParameters["room_id"]
+	userId := event.PathParameters["user_id"]
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return createResponseWithStatus(http.StatusInternalServerError), err
@@ -53,6 +59,14 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	if targetRoom.RoomId == "" {
 		fmt.Printf("INFO:room %v not found\n", roomId)
 		return createResponseWithStatus(http.StatusNotFound), nil
+	}
+	requestedUser, err := getUser(cfg, userId, userTableName)
+	if err != nil {
+		return createResponseWithStatus(http.StatusInternalServerError), err
+	}
+	igniteUser, err := getUser(cfg, requestedUser.FiredBy, userTableName)
+	if err != nil {
+		return createResponseWithStatus(http.StatusInternalServerError), err
 	}
 	numberParticipants := len(targetRoom.Participants)
 	numberFired := 0
@@ -69,8 +83,15 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		}
 	}
 	fmt.Printf("INFO:room %v, numberParticipants %v, numberFired %v\n", roomId, numberParticipants, numberFired)
+	result := numberParticipants/2 < numberFired
+	if requestedUser.IsSanta {
+		result = !result
+	}
 	resp := response{
-		Result: numberParticipants/2 < numberFired,
+		Result:         result,
+		IsIgniterSanta: igniteUser.IsSanta,
+		IsPlayerSanta:  requestedUser.IsSanta,
+		IgnitedBy:      igniteUser.Nickname,
 	}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
@@ -79,7 +100,6 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	return events.APIGatewayProxyResponse{
 		Body:       string(jsonResp),
 		StatusCode: http.StatusOK,
-
 		Headers:    map[string]string{"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
 	}, nil
 
