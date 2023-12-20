@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -34,28 +35,34 @@ type answer struct {
 	Answer     bool   `json:"answer" dynamodbav:"answer"`
 }
 
+var errorNotFired = errors.New("Not_fired")
+
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	const roomTableName = "CandleBackendRoomTable" // || os.LookupEnv("ROOM_TABLE_NAME")
 	const userTableName = "CandleBackendUserTable" // || os.LookupEnv("USER_TABLE_NAME")
 	roomId := event.PathParameters["room_id"]
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return createResponseWithStatusAndMessage(http.StatusInternalServerError, "internal server error"), err
+		return createResponseWithStatus(http.StatusInternalServerError), err
 	}
 	//check if user exists and in room
 	targetRoom, err := getRoom(cfg, roomId, roomTableName)
 	if err != nil {
-		return createResponseWithStatusAndMessage(http.StatusInternalServerError, "internal server error"), err
+		return createResponseWithStatus(http.StatusInternalServerError), err
 	}
 	if targetRoom.RoomId == "" {
-		return createResponseWithStatusAndMessage(http.StatusNotFound, "room not found"), nil
+		fmt.Printf("INFO:room %v not found\n", roomId)
+		return createResponseWithStatus(http.StatusNotFound), nil
 	}
 	numberParticipants := len(targetRoom.Participants)
 	numberFired := 0
 	for _, participant := range targetRoom.Participants {
 		u, err := getUser(cfg, participant, userTableName)
-		if err != nil {
-			return createResponseWithStatusAndMessage(http.StatusInternalServerError, "internal server error"), err
+		if err == errorNotFired {
+			fmt.Printf("INFO:room %v, user %v not fired\n", roomId, participant)
+			return createResponseWithStatus(http.StatusAccepted), nil
+		} else if err != nil {
+			return createResponseWithStatus(http.StatusInternalServerError), err
 		}
 		if u.Fired {
 			numberFired++
@@ -67,7 +74,7 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	}
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
-		return createResponseWithStatusAndMessage(http.StatusInternalServerError, "internal server error"), err
+		return createResponseWithStatus(http.StatusInternalServerError), err
 	}
 	return events.APIGatewayProxyResponse{
 		Body:       string(jsonResp),
@@ -82,9 +89,8 @@ func main() {
 	lambda.Start(handler)
 }
 
-func createResponseWithStatusAndMessage(statuCode int, message string) events.APIGatewayProxyResponse {
+func createResponseWithStatus(statuCode int) events.APIGatewayProxyResponse {
 	return events.APIGatewayProxyResponse{
-		Body:       message,
 		StatusCode: statuCode,
 		Headers:    map[string]string{"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
 	}
@@ -113,6 +119,9 @@ func getUser(cfg aws.Config, userId string, tableName string) (user, error) {
 			"user_id": &types.AttributeValueMemberS{Value: userId},
 		},
 	})
+	if resp.Item["fired"] == nil {
+		return user{}, errorNotFired
+	}
 	var u user
 	if err != nil {
 		return u, err

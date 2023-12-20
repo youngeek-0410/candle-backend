@@ -183,9 +183,12 @@ paths:
                 properties:
                   result:
                     type: boolean
-                    description: Santa won or the citizens won
+                    description: Citizen won or not
+        "202":
+          description: RoomId is correct, but still in tallying
         "404":
-          description: Results not found
+          description: Room not found
+
     post:
       summary: Submit fire count for tallying
       parameters:
