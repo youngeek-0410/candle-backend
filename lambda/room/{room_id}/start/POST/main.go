@@ -110,20 +110,7 @@ func ReturnSantaCandidateList(users []UserData) []UserData {
 		} else if falseCountByUser[user.UserID] == maxFalseCount {
 			santaCandidateList = append(santaCandidateList, user)
 		}
-		//
 	}
-
-	//var santaCandidateList []string
-	//maxFalseCount := -1
-
-	//for userName, userFalseCount := range falseCountByUser {
-	//	if userFalseCount > maxFalseCount {
-	//		santaCandidateList = []string{userName}
-	//		maxFalseCount = userFalseCount
-	//	} else if userFalseCount == maxFalseCount {
-	//		santaCandidateList = append(santaCandidateList, userName)
-	//	}
-	//}
 	return santaCandidateList
 }
 
@@ -148,24 +135,6 @@ func DecidingSantaAndQuestion(santaCandidateList []UserData, allUserData []UserD
 	var torchQuestionId string
 	var santaUserID string
 
-	//for _, santaData := range santaCandidateList {
-	//	for questionID, trueCount := range trueQueMap {
-	//		if !isNotAllUserFalseSpecificQuestion(trueQueMap, questionID) {
-	//			continue
-	//		}
-	//		for _, answer := range santaData.Answers {
-	//			if (!answer.Answer) && (trueCount > maxTrueCount) {
-	//				if santaData.NickName == "hoku5" {
-	//					fmt.Println("tootta")
-	//				}
-	//				maxTrueCount = trueCount
-	//				torchQuestionId = questionID
-	//				santaUserID = santaData.UserID
-	//			}
-	//		}
-	//	}
-	//}
-	// edit by ishibe
 	for _, santaData := range santaCandidateList {
 		for _, answer := range santaData.Answers {
 			trueCount := trueQueMap[answer.QuestionID]
@@ -179,11 +148,9 @@ func DecidingSantaAndQuestion(santaCandidateList []UserData, allUserData []UserD
 			}
 		}
 	}
-	//
 	fmt.Println("torch:", torchQuestionId)
 	fmt.Println("jinro:", santaUserID)
 }
-
 
 func createErrorResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{
