@@ -245,6 +245,7 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	return events.APIGatewayProxyResponse{
 		Body:       string(json),
 		StatusCode: 200,
+		Headers:    map[string]string{"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
 	}, nil
 }
 
