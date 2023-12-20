@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"os"
+	"strings"
 )
 
 type Answer struct {
@@ -63,8 +64,8 @@ func getAllUserData(cfg aws.Config, ctx context.Context, userIDList []string) ([
 	}
 
 	var allUserInfo []UserData
-	var userInfo UserData
 	for _, userID := range userIDList {
+		var userInfo UserData
 		response, err := svc.GetItem(ctx, &dynamodb.GetItemInput{
 			Key: map[string]types.AttributeValue{
 				"user_id": &types.AttributeValueMemberS{Value: userID},
@@ -78,6 +79,7 @@ func getAllUserData(cfg aws.Config, ctx context.Context, userIDList []string) ([
 		if response.Item == nil {
 			return nil, errors.New("User data response is empty")
 		}
+
 		if err = attributevalue.UnmarshalMap(response.Item, &userInfo); err != nil {
 			return nil, err
 		}
@@ -88,32 +90,19 @@ func getAllUserData(cfg aws.Config, ctx context.Context, userIDList []string) ([
 	return allUserInfo, nil
 
 }
-func AggregateQuestionAnswersFromAllUsers(allUserData []UserData) map[string]int {
-	//keyをquestion_id、valueをユーザーの回答がTrueの数として計算する関数
-	totalCount := make(map[string]int)
-	for _, user := range allUserData {
-		for _, ans := range user.Answers {
-			key := ans.QuestionID
-			if ans.Answer {
-				totalCount[key]++
-			}
-		}
-	}
-	return totalCount
-}
-func ReturnSantaCandidateList(allUserData []UserData) []string {
+func ReturnSantaCandidateList(users []UserData) []string {
 	//サンタ疑惑のあるユーザーリストの返却
 	falseCountByUser := make(map[string]int)
-	for _, user := range allUserData {
-		for _, ans := range user.Answers {
-			if !ans.Answer {
+	for _, user := range users {
+		for _, answer := range user.Answers {
+			if !answer.Answer {
 				falseCountByUser[user.UserID]++
 			}
 		}
 	}
+
 	var santaCandidateList []string
-	var maxFalseCount int
-	maxFalseCount = -1
+	maxFalseCount := -1
 
 	for userName, userFalseCount := range falseCountByUser {
 		if userFalseCount > maxFalseCount {
@@ -124,11 +113,6 @@ func ReturnSantaCandidateList(allUserData []UserData) []string {
 		}
 	}
 	return santaCandidateList
-}
-
-func CandleAndSantaDecisionLogic(santaCandidateList []string, listOfTrueEachQuestion map[string], allUserData []UserData) {
-	//各サンタ候補がFalseと答えたquestionを格納しておく
-	var FalseAnsListForSantaCandidates map[string][]string
 }
 
 func createErrorResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
@@ -159,12 +143,11 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 		return createErrorResponseWithStatus(500, err.Error())
 	}
 
-	aggregateQuestionResults := AggregateQuestionAnswersFromAllUsers(allUserData)
-
-	eachUserFalseCount := CalculateFalseForEachUser(allUserData)
+	test := ReturnSantaCandidateList(allUserData)
+	result := strings.Join(test, " ")
 
 	return events.APIGatewayProxyResponse{
-		Body:       string("test"),
+		Body:       result,
 		StatusCode: 200,
 	}, nil
 }
