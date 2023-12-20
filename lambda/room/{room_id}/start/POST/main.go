@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -31,6 +31,24 @@ type RoomData struct {
 	Participants []string `json:"participants" dynamodbav:"participants"`
 }
 
+type RequestBody struct {
+	UserID string `json:"user_id" dynamodbav:"user_id"`
+}
+
+type ResponseBody struct {
+	UserID              string `json:"user_id"`
+	IsSanta             bool   `json:"is_santa"`
+	QuestionID          string `json:"question_id"`
+	QuestionDescription string `json:"question_description"`
+}
+//type Question struct {
+//	QuestionID int    `json:"question_id" dynamodbav:"question_id"`
+//	Statement  string `json:"statement" dynamodbav:"statement"`
+//}
+//type QuestionResponse struct {
+//	Questions []Question `json:"questions"`
+//}
+//
 func getRoomData(cfg aws.Config, ctx context.Context, roomID string) (RoomData, error) {
 	svc := dynamodb.NewFromConfig(cfg)
 	tableName := "CandleBackendRoomTable"
@@ -127,12 +145,12 @@ func returnNumberOfTrueForEachQuestion(userData []UserData) map[string]int {
 	return totalCount
 }
 
-func DecidingSantaAndQuestion(santaCandidateList []UserData, allUserData []UserData) {
+func DecidingSantaAndQuestion(santaCandidateList []UserData, allUserData []UserData) (string, string) {
 	trueQueMap := returnNumberOfTrueForEachQuestion(allUserData)
 
 	var maxTrueCount int
 	maxTrueCount = -1
-	var torchQuestionId string
+	var torchQuestionID string
 	var santaUserID string
 
 	for _, santaData := range santaCandidateList {
@@ -143,13 +161,12 @@ func DecidingSantaAndQuestion(santaCandidateList []UserData, allUserData []UserD
 			}
 			if (!answer.Answer) && (trueCount > maxTrueCount) {
 				maxTrueCount = trueCount
-				torchQuestionId = answer.QuestionID
+				torchQuestionID = answer.QuestionID
 				santaUserID = santaData.UserID
 			}
 		}
 	}
-	fmt.Println("torch:", torchQuestionId)
-	fmt.Println("jinro:", santaUserID)
+	return santaUserID, torchQuestionID
 }
 
 func createErrorResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
@@ -159,10 +176,37 @@ func createErrorResponseWithStatus(statusCode int, responseMessage string) (even
 	}, nil
 }
 
+//func getQuestionDescriptionFromQuestionID(cfg aws.Config, ctx context.Context, questionID int) (string, error) {
+//	tableName := "CandleBackendQuestionTable"
+//	if t, exists := os.LookupEnv("QUESTION_TABLE_NAME"); exists {
+//		tableName = t
+//	}
+//
+//	svc := dynamodb.NewFromConfig(cfg)
+//
+//	response, err := svc.Scan(ctx, &dynamodb.ScanInput{
+//		TableName: aws.String(tableName),
+//	})
+//	if err != nil {
+//		return "", err
+//	}
+//	var queRes QuestionResponse
+//	err = attributevalue.UnmarshalListOfMaps(response.Items, &queRes)
+//	if err != nil {
+//		return "", err
+//	}
+//}
+
+
 func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	roomID := event.PathParameters["room_id"]
 	if roomID == "" {
 		return createErrorResponseWithStatus(400, "Incorrect path parameter")
+	}
+
+	var req RequestBody
+	if err := json.Unmarshal([]byte(event.Body), &req); err != nil {
+		return createErrorResponseWithStatus(500, "JSON parse error")
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx)
@@ -181,10 +225,25 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	}
 
 	santaCandidateList := ReturnSantaCandidateList(allUserData)
-	DecidingSantaAndQuestion(santaCandidateList, allUserData)
+	santaUserID, torchQuestionID := DecidingSantaAndQuestion(santaCandidateList, allUserData)
+
+	var responseBody ResponseBody
+	//先ほど取得したサンタのuser_idとリクエストボディのuser_idが一致したらサンタである
+	if santaUserID == req.UserID {
+		responseBody.IsSanta = true
+		responseBody.QuestionID = torchQuestionID
+	} else {
+		responseBody.IsSanta = false
+		responseBody.QuestionID = torchQuestionID
+	}
+
+	responseBody.UserID = req.UserID
+	responseBody.QuestionDescription = "ちいかわは好きですか。"
+
+	json,_ := json.Marshal(responseBody)
 
 	return events.APIGatewayProxyResponse{
-		Body:       "ok",
+		Body:       string(json),
 		StatusCode: 200,
 	}, nil
 }
