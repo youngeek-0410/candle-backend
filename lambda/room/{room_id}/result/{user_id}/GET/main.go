@@ -36,8 +36,8 @@ type user struct {
 	Answers  []answer `json:"answers" dynamodbav:"answers"`
 }
 type answer struct {
-	QuestionId string `json:"question_id" dynamodbav:"question_id"`
-	Answer     bool   `json:"answer" dynamodbav:"answer"`
+	QuestionId int  `json:"question_id" dynamodbav:"question_id"`
+	Answer     bool `json:"answer" dynamodbav:"answer"`
 }
 
 var errorNotFired = errors.New("Not_fired")

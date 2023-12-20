@@ -19,12 +19,12 @@ import (
 type requestBody struct {
 	UserID     string `json:"user_id"`
 	FireUserID string `json:"fire_user_id"`
-	QuestionID string `json:"question_id"`
+	QuestionID int    `json:"question_id"`
 }
 
 type answer struct {
-	QuestionID string `json:"question_id" dynamodbav:"question_id"`
-	Answer     bool   `json:"answer" dynamodbav:"answer"`
+	QuestionID int  `json:"question_id" dynamodbav:"question_id"`
+	Answer     bool `json:"answer" dynamodbav:"answer"`
 }
 
 type user struct {
