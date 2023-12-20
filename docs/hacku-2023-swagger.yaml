@@ -148,13 +148,10 @@ paths:
                     type: string
                   is_santa:
                     type: boolean
-                  question:
-                    type: object
-                    properties:
-                      question_id:
-                        type: integer
-                      statement:
-                        type: string
+                  question_id:
+                    type: string
+                  question_description:
+                    type: string
         "404":
           description: Room not found
   /room/{room_id}/result/{user_id}:

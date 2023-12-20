@@ -117,17 +117,17 @@ export class CandleBackendStack extends cdk.Stack {
     userTable.grantReadWriteData(roomIdPOSTHandler);
     roomId.addMethod('POST', new apigateway.LambdaIntegration(roomIdPOSTHandler))
 
-    //room/{room_id}/start:GET
+    //room/{room_id}/start:POST
     const start = roomId.addResource('start');
-    const roomIdStartGETHandler = new lambda.Function(this, 'CandleBackendRoomIdStartGETHandler', {
-      functionName: 'RoomIdStartGETHandler',
+    const roomIdStartPOSTHandler = new lambda.Function(this, 'CandleBackendRoomIdStartPOSTHandler', {
+      functionName: 'RoomIdStartPOSTHandler',
       runtime: lambda.Runtime.PROVIDED_AL2,
       handler: 'bootstrap',
-      code: lambda.Code.fromAsset('lambda/room/{room_id}/start/GET',goLambdaBundleConfig),
+      code: lambda.Code.fromAsset('lambda/room/{room_id}/start/POST',goLambdaBundleConfig),
     });
-    roomTable.grantReadWriteData(roomIdStartGETHandler);
-    userTable.grantReadWriteData(roomIdStartGETHandler);
-    start.addMethod('GET', new apigateway.LambdaIntegration(roomIdStartGETHandler))
+    roomTable.grantReadWriteData(roomIdStartPOSTHandler);
+    userTable.grantReadWriteData(roomIdStartPOSTHandler);
+    start.addMethod('POST', new apigateway.LambdaIntegration(roomIdStartPOSTHandler))
 
     //room/{room_id}/result:GET
     const result = roomId.addResource('result');
