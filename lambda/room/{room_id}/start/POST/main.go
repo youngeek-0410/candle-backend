@@ -90,7 +90,7 @@ func getAllUserData(cfg aws.Config, ctx context.Context, userIDList []string) ([
 
 }
 
-func createEmptyResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
+func createErrorResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{
 		Body:       responseMessage,
 		StatusCode: statusCode,
@@ -100,27 +100,27 @@ func createEmptyResponseWithStatus(statusCode int, responseMessage string) (even
 func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	roomID := event.PathParameters["room_id"]
 	if roomID == "" {
-		return createEmptyResponseWithStatus(400, "Incorrect path parameter")
+		return createErrorResponseWithStatus(400, "Incorrect path parameter")
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return createEmptyResponseWithStatus(500, "Internal server error")
+		return createErrorResponseWithStatus(500, "Internal server error")
 	}
 
 	roomResult, err := getAllQuestionAnswers(cfg, ctx, roomID)
 	if err != nil {
-		return createEmptyResponseWithStatus(500, "DB get error")
+		return createErrorResponseWithStatus(500, "DB get error")
 	}
 
 	result, err := getAllUserData(cfg, ctx, roomResult.Participants)
 	if err != nil {
-		return createEmptyResponseWithStatus(500, err.Error())
+		return createErrorResponseWithStatus(500, err.Error())
 	}
 
 	jsonResult, err := json.Marshal(result)
 	if err != nil {
-		return createEmptyResponseWithStatus(500, "JSON parse error")
+		return createErrorResponseWithStatus(500, "JSON parse error")
 	}
 
 	return events.APIGatewayProxyResponse{
