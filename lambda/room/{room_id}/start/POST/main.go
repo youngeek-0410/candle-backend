@@ -90,28 +90,40 @@ func getAllUserData(cfg aws.Config, ctx context.Context, userIDList []string) ([
 	return allUserInfo, nil
 
 }
-func ReturnSantaCandidateList(users []UserData) []string {
+func ReturnSantaCandidateList(users []UserData) []UserData {
 	//サンタ疑惑のあるユーザーリストの返却
 	falseCountByUser := make(map[string]int)
+	// edit by ishibe
+	var santaCandidateList []UserData
+	maxFalseCount := -1
+	//
 	for _, user := range users {
 		for _, answer := range user.Answers {
 			if !answer.Answer {
 				falseCountByUser[user.UserID]++
 			}
 		}
-	}
-
-	var santaCandidateList []string
-	maxFalseCount := -1
-
-	for userName, userFalseCount := range falseCountByUser {
-		if userFalseCount > maxFalseCount {
-			santaCandidateList = []string{userName}
-			maxFalseCount = userFalseCount
-		} else if userFalseCount == maxFalseCount {
-			santaCandidateList = append(santaCandidateList, userName)
+		// edit by ishibe
+		if falseCountByUser[user.UserID] > maxFalseCount {
+			santaCandidateList = []UserData{user}
+			maxFalseCount = falseCountByUser[user.UserID]
+		} else if falseCountByUser[user.UserID] == maxFalseCount {
+			santaCandidateList = append(santaCandidateList, user)
 		}
+		//
 	}
+
+	//var santaCandidateList []string
+	//maxFalseCount := -1
+
+	//for userName, userFalseCount := range falseCountByUser {
+	//	if userFalseCount > maxFalseCount {
+	//		santaCandidateList = []string{userName}
+	//		maxFalseCount = userFalseCount
+	//	} else if userFalseCount == maxFalseCount {
+	//		santaCandidateList = append(santaCandidateList, userName)
+	//	}
+	//}
 	return santaCandidateList
 }
 
@@ -128,15 +140,50 @@ func returnNumberOfTrueForEachQuestion(userData []UserData) map[string]int {
 	return totalCount
 }
 
-//func DecidingSantaAndQuestion(santaCandidateList []string, allUserData []UserData) {
-//	trueQueMap := returnNumberOfTrueForEachQuestion(allUserData)
-//	fmt.Println(trueQueMap)
-//}
-
-func DecidingSantaAndQuestion(allUserData []UserData) {
+func DecidingSantaAndQuestion(santaCandidateList []UserData, allUserData []UserData) {
 	trueQueMap := returnNumberOfTrueForEachQuestion(allUserData)
-	fmt.Println(trueQueMap)
+
+	var maxTrueCount int
+	maxTrueCount = -1
+	var torchQuestionId string
+	var santaUserID string
+
+	//for _, santaData := range santaCandidateList {
+	//	for questionID, trueCount := range trueQueMap {
+	//		if !isNotAllUserFalseSpecificQuestion(trueQueMap, questionID) {
+	//			continue
+	//		}
+	//		for _, answer := range santaData.Answers {
+	//			if (!answer.Answer) && (trueCount > maxTrueCount) {
+	//				if santaData.NickName == "hoku5" {
+	//					fmt.Println("tootta")
+	//				}
+	//				maxTrueCount = trueCount
+	//				torchQuestionId = questionID
+	//				santaUserID = santaData.UserID
+	//			}
+	//		}
+	//	}
+	//}
+	// edit by ishibe
+	for _, santaData := range santaCandidateList {
+		for _, answer := range santaData.Answers {
+			trueCount := trueQueMap[answer.QuestionID]
+			if trueCount == 0 {
+				continue
+			}
+			if (!answer.Answer) && (trueCount > maxTrueCount) {
+				maxTrueCount = trueCount
+				torchQuestionId = answer.QuestionID
+				santaUserID = santaData.UserID
+			}
+		}
+	}
+	//
+	fmt.Println("torch:", torchQuestionId)
+	fmt.Println("jinro:", santaUserID)
 }
+
 
 func createErrorResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
 	return events.APIGatewayProxyResponse{
@@ -166,9 +213,8 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 		return createErrorResponseWithStatus(500, err.Error())
 	}
 
-	//santaCandidateList := ReturnSantaCandidateList(allUserData)
-	_ = ReturnSantaCandidateList(allUserData)
-	DecidingSantaAndQuestion(allUserData)
+	santaCandidateList := ReturnSantaCandidateList(allUserData)
+	DecidingSantaAndQuestion(santaCandidateList, allUserData)
 
 	return events.APIGatewayProxyResponse{
 		Body:       "ok",
