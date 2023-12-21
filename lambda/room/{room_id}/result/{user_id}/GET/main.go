@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -30,7 +29,7 @@ type user struct {
 	UserId   string   `json:"user_id" dynamodbav:"user_id"`
 	Nickname string   `json:"nickname" dynamodbav:"nickname"`
 	RoomId   string   `json:"room_id" dynamodbav:"room_id"`
-	Fired    bool     `json:"fired" dynamodbav:"fired"`
+	Fired    bool     `json:"fired" dynamodbav:"fire"`
 	IsSanta  bool     `json:"is_santa" dynamodbav:"is_santa"`
 	FiredBy  string   `json:"fired_by" dynamodbav:"fired_by"`
 	Answers  []answer `json:"answers" dynamodbav:"answers"`
@@ -39,8 +38,6 @@ type answer struct {
 	QuestionId int  `json:"question_id" dynamodbav:"question_id"`
 	Answer     bool `json:"answer" dynamodbav:"answer"`
 }
-
-var errorNotReportedFireStatus = errors.New("Not_reported_fire_status")
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	const roomTableName = "CandleBackendRoomTable" // || os.LookupEnv("ROOM_TABLE_NAME")
@@ -60,24 +57,28 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 		fmt.Printf("INFO:room %v not found\n", roomId)
 		return createResponseWithStatus(http.StatusNotFound), nil
 	}
-	requestedUser, err := getUser(cfg, userId, userTableName)
+	requestedUser, calculated, err := getUser(cfg, userId, userTableName)
 	if err != nil {
 		return createResponseWithStatus(http.StatusInternalServerError), err
+	} else if !calculated {
+		return createResponseWithStatus(http.StatusAccepted), nil
 	}
-	igniteUser, err := getUser(cfg, requestedUser.FiredBy, userTableName)
+	igniteUser, calculated, err := getUser(cfg, requestedUser.FiredBy, userTableName)
 	if err != nil {
 		return createResponseWithStatus(http.StatusInternalServerError), err
+	} else if !calculated {
+		return createResponseWithStatus(http.StatusAccepted), nil
 	}
 	numberParticipants := len(targetRoom.Participants)
 	numberFired := 0
 
 	for _, participant := range targetRoom.Participants {
-		u, err := getUser(cfg, participant, userTableName)
-		if err == errorNotReportedFireStatus {
+		u, calculated, err := getUser(cfg, participant, userTableName)
+		if err != nil {
+			return createResponseWithStatus(http.StatusInternalServerError), err
+		} else if !calculated {
 			fmt.Printf("INFO:room %v, user %v not fired\n", roomId, participant)
 			return createResponseWithStatus(http.StatusAccepted), nil
-		} else if err != nil {
-			return createResponseWithStatus(http.StatusInternalServerError), err
 		}
 		if u.IsSanta {
 			numberParticipants--
@@ -136,7 +137,7 @@ func getRoom(cfg aws.Config, roomId string, tableName string) (room, error) {
 	return r, err
 }
 
-func getUser(cfg aws.Config, userId string, tableName string) (user, error) {
+func getUser(cfg aws.Config, userId string, tableName string) (user, bool, error) {
 	svc := dynamodb.NewFromConfig(cfg)
 	resp, err := svc.GetItem(context.TODO(), &dynamodb.GetItemInput{
 		TableName: aws.String(tableName),
@@ -144,13 +145,13 @@ func getUser(cfg aws.Config, userId string, tableName string) (user, error) {
 			"user_id": &types.AttributeValueMemberS{Value: userId},
 		},
 	})
-	if resp.Item["fired"] == nil {
-		return user{}, errorNotReportedFireStatus
+	if resp.Item["fire"] == nil {
+		return user{}, false, nil
 	}
 	var u user
 	if err != nil {
-		return u, err
+		return u, true, err
 	}
 	err = attributevalue.UnmarshalMap(resp.Item, &u)
-	return u, err
+	return u, true, err
 }
