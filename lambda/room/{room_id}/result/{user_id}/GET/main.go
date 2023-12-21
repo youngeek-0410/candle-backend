@@ -40,7 +40,7 @@ type answer struct {
 	Answer     bool   `json:"answer" dynamodbav:"answer"`
 }
 
-var errorNotFired = errors.New("Not_fired")
+var errorNotReportedFireStatus = errors.New("Not_reported_fire_status")
 
 func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	const roomTableName = "CandleBackendRoomTable" // || os.LookupEnv("ROOM_TABLE_NAME")
@@ -70,19 +70,24 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	}
 	numberParticipants := len(targetRoom.Participants)
 	numberFired := 0
+
 	for _, participant := range targetRoom.Participants {
 		u, err := getUser(cfg, participant, userTableName)
-		if err == errorNotFired {
+		if err == errorNotReportedFireStatus {
 			fmt.Printf("INFO:room %v, user %v not fired\n", roomId, participant)
 			return createResponseWithStatus(http.StatusAccepted), nil
 		} else if err != nil {
 			return createResponseWithStatus(http.StatusInternalServerError), err
 		}
-		if u.Fired {
+		if u.IsSanta {
+			numberParticipants--
+		} else if u.Fired {
 			numberFired++
 		}
 	}
 	fmt.Printf("INFO:room %v, numberParticipants %v, numberFired %v\n", roomId, numberParticipants, numberFired)
+
+	//サンタ以外の人間の半数以上が点火されているなら、市民の勝利
 	result := numberParticipants/2 < numberFired
 	if requestedUser.IsSanta {
 		result = !result
@@ -140,7 +145,7 @@ func getUser(cfg aws.Config, userId string, tableName string) (user, error) {
 		},
 	})
 	if resp.Item["fired"] == nil {
-		return user{}, errorNotFired
+		return user{}, errorNotReportedFireStatus
 	}
 	var u user
 	if err != nil {
