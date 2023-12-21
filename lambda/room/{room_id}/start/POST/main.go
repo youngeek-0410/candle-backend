@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"strconv"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -15,6 +13,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"math/rand"
+	"os"
+	"strconv"
+	"time"
 )
 
 type Answer struct {
@@ -146,6 +148,16 @@ func returnNumberOfTrueForEachQuestion(userData []UserData) map[string]int {
 	return totalCount
 }
 
+func carefullySelectionOfTrueAnsTwoOrMore(eachQueCount map[string]int) []string {
+	var twoOrMoreQueIDList []string
+	for key, count := range eachQueCount {
+		if count >= 2 {
+			twoOrMoreQueIDList = append(twoOrMoreQueIDList, key)
+		}
+	}
+	return twoOrMoreQueIDList
+}
+
 func DecidingSantaAndQuestion(santaCandidateList []UserData, allUserData []UserData) (string, string) {
 	trueQueMap := returnNumberOfTrueForEachQuestion(allUserData)
 
@@ -201,7 +213,6 @@ func getQuestionDescriptionFromQuestionID(cfg aws.Config, ctx context.Context, q
 		return "", err
 	}
 
-	fmt.Println(queRes)
 
 	for _, que := range queRes {
 		if que.QuestionID == questionID {
@@ -242,9 +253,7 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	}
 
 	santaCandidateList := ReturnSantaCandidateList(allUserData)
-	santaUserID, torchQuestionID := DecidingSantaAndQuestion(santaCandidateList, allUserData)
-	fmt.Println("torch")
-	fmt.Println(torchQuestionID)
+	santaUserID, _ := DecidingSantaAndQuestion(santaCandidateList, allUserData)
 
 	var responseBody ResponseBody
 	//先ほど取得したサンタのuser_idとリクエストボディのuser_idが一致したらサンタである
@@ -253,7 +262,13 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	} else {
 		responseBody.IsSanta = false
 	}
-	responseBody.QuestionID = torchQuestionID
+	trueQueMap := returnNumberOfTrueForEachQuestion(allUserData)
+	twoOrMoreQueIDList := carefullySelectionOfTrueAnsTwoOrMore(trueQueMap)
+
+	//回答者が2以上のquestion_idをリストアップして、その長さ分ランダムな整数値を生成し、その数字をインデックスにしてquestion_idを決定
+	rand.Seed(time.Now().UnixNano())
+	randNum := rand.Intn(len(twoOrMoreQueIDList))
+	responseBody.QuestionID = twoOrMoreQueIDList[randNum]
 
 	intQueID, err := strconv.Atoi(responseBody.QuestionID)
 	if err != nil {
