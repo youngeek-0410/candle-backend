@@ -12,8 +12,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"math/rand"
 	"os"
 	"strconv"
+	"time"
 )
 
 type Answer struct {
@@ -148,6 +150,24 @@ func returnNumberOfTrueForEachQuestion(userData []UserData) map[string]int {
 	return totalCount
 }
 
+func getSecondMostTrueQuestionID(userData []UserData, santaQueKey string) string {
+	totalCount := returnNumberOfTrueForEachQuestion(userData)
+	var maxCount int
+	var secondKey string
+	maxCount = -1
+	for key, count := range totalCount {
+		if key == santaQueKey {
+			//サンタの答えれない質問は確実に答えさせないとだめなので二番目の候補から外れる
+			continue
+		}
+		if count >= maxCount {
+			maxCount = count
+			secondKey = key
+		}
+	}
+	return secondKey
+}
+
 func DecidingSantaAndQuestion(santaCandidateList []UserData, allUserData []UserData) (string, string) {
 	trueQueMap := returnNumberOfTrueForEachQuestion(allUserData)
 
@@ -254,10 +274,22 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 		responseBody.QuestionID = torchQuestionID
 	} else {
 		responseBody.IsSanta = false
-		responseBody.QuestionID = torchQuestionID
 	}
 
-	intQueID, err := strconv.Atoi(torchQuestionID)
+	secondQue := getSecondMostTrueQuestionID(allUserData, torchQuestionID)
+	rand.Seed(time.Now().UnixNano())
+	randomQueBool := rand.Intn(2) == 0
+
+	if !responseBody.IsSanta {
+		if randomQueBool {
+			responseBody.QuestionID = secondQue
+		} else {
+			responseBody.QuestionID = torchQuestionID
+		}
+	}
+
+
+	intQueID, err := strconv.Atoi(responseBody.QuestionID)
 	if err != nil {
 		return createErrorResponseWithStatus(500, err.Error())
 	}
