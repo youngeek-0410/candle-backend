@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"strconv"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -215,7 +213,6 @@ func getQuestionDescriptionFromQuestionID(cfg aws.Config, ctx context.Context, q
 		return "", err
 	}
 
-	fmt.Println(queRes)
 
 	for _, que := range queRes {
 		if que.QuestionID == questionID {
