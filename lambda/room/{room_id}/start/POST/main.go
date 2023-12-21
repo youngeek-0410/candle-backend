@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -12,8 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"os"
-	"strconv"
 )
 
 type Answer struct {
@@ -114,17 +115,14 @@ func getAllUserData(cfg aws.Config, ctx context.Context, userIDList []string) ([
 func ReturnSantaCandidateList(users []UserData) []UserData {
 	//サンタ疑惑のあるユーザーリストの返却
 	falseCountByUser := make(map[string]int)
-	// edit by ishibe
 	var santaCandidateList []UserData
 	maxFalseCount := -1
-	//
 	for _, user := range users {
 		for _, answer := range user.Answers {
 			if !answer.Answer {
 				falseCountByUser[user.UserID]++
 			}
 		}
-		// edit by ishibe
 		if falseCountByUser[user.UserID] > maxFalseCount {
 			santaCandidateList = []UserData{user}
 			maxFalseCount = falseCountByUser[user.UserID]
