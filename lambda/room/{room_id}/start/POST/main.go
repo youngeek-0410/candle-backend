@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -213,13 +212,31 @@ func getQuestionDescriptionFromQuestionID(cfg aws.Config, ctx context.Context, q
 		return "", err
 	}
 
-
 	for _, que := range queRes {
 		if que.QuestionID == questionID {
 			return que.Statement, nil
 		}
 	}
 	return "", errors.New("Invalid QuestionID")
+}
+
+func addIsSantaColumn(cfg aws.Config, ctx context.Context, userID string, isSanta bool) error {
+	svc := dynamodb.NewFromConfig(cfg)
+
+	_, err := svc.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+		TableName: aws.String("CandleBackendUserTable"),
+		Key: map[string]types.AttributeValue{
+			"user_id": &types.AttributeValueMemberS{Value: userID},
+		},
+		UpdateExpression: aws.String("SET is_santa = :is_santa"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":is_santa": &types.AttributeValueMemberBOOL{Value: isSanta},
+		},
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -262,6 +279,7 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	} else {
 		responseBody.IsSanta = false
 	}
+	addIsSantaColumn(cfg, ctx, req.UserID, responseBody.IsSanta)
 	trueQueMap := returnNumberOfTrueForEachQuestion(allUserData)
 	twoOrMoreQueIDList := carefullySelectionOfTrueAnsTwoOrMore(trueQueMap)
 

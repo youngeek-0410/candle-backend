@@ -25,6 +25,7 @@ type UserData struct {
 	NickName string   `json:"nickname" dynamodbav:"nickname"`
 	RoomID   string   `json:"room_id" dynamodbav:"room_id"`
 	Answers  []Answer `json:"answers" dynamodbav:"answers"`
+	IsSanta  bool     `json:"is_santa" dynamodbav:"is_santa"`
 }
 
 type requestBody struct {
