@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -12,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"os"
+	"strconv"
 )
 
 type Answer struct {
@@ -30,7 +32,6 @@ type RoomData struct {
 	RoomID       string   `json:"room_id" dynamodbav:"room_id"`
 	Participants []string `json:"participants" dynamodbav:"participants"`
 }
-
 type RequestBody struct {
 	UserID string `json:"user_id" dynamodbav:"user_id"`
 }
@@ -41,14 +42,16 @@ type ResponseBody struct {
 	QuestionID          string `json:"question_id"`
 	QuestionDescription string `json:"question_description"`
 }
-//type Question struct {
-//	QuestionID int    `json:"question_id" dynamodbav:"question_id"`
-//	Statement  string `json:"statement" dynamodbav:"statement"`
-//}
-//type QuestionResponse struct {
-//	Questions []Question `json:"questions"`
-//}
-//
+
+type Question struct {
+	QuestionID int    `json:"question_id" dynamodbav:"question_id"`
+	Statement  string `json:"statement" dynamodbav:"statement"`
+}
+
+type QuestionResponse struct {
+	Questions []Question `json:"questions"`
+}
+
 func getRoomData(cfg aws.Config, ctx context.Context, roomID string) (RoomData, error) {
 	svc := dynamodb.NewFromConfig(cfg)
 	tableName := "CandleBackendRoomTable"
@@ -176,27 +179,38 @@ func createErrorResponseWithStatus(statusCode int, responseMessage string) (even
 	}, nil
 }
 
-//func getQuestionDescriptionFromQuestionID(cfg aws.Config, ctx context.Context, questionID int) (string, error) {
-//	tableName := "CandleBackendQuestionTable"
-//	if t, exists := os.LookupEnv("QUESTION_TABLE_NAME"); exists {
-//		tableName = t
-//	}
-//
-//	svc := dynamodb.NewFromConfig(cfg)
-//
-//	response, err := svc.Scan(ctx, &dynamodb.ScanInput{
-//		TableName: aws.String(tableName),
-//	})
-//	if err != nil {
-//		return "", err
-//	}
-//	var queRes QuestionResponse
-//	err = attributevalue.UnmarshalListOfMaps(response.Items, &queRes)
-//	if err != nil {
-//		return "", err
-//	}
-//}
+func getQuestionDescriptionFromQuestionID(cfg aws.Config, ctx context.Context, questionID int) (string, error) {
+	tableName := "CandleBackendQuestionTable"
+	if t, exists := os.LookupEnv("QUESTION_TABLE_NAME"); exists {
+		tableName = t
+	}
 
+	svc := dynamodb.NewFromConfig(cfg)
+
+	response, err := svc.Scan(ctx, &dynamodb.ScanInput{
+		TableName: aws.String(tableName),
+	})
+	if err != nil {
+		fmt.Println("Error scanning DynamoDB table:", err)
+		return "", err
+	}
+
+	var queRes []Question
+	err = attributevalue.UnmarshalListOfMaps(response.Items, &queRes)
+	if err != nil {
+		fmt.Println("Error unmarshaling DynamoDB response:", err)
+		return "", err
+	}
+
+	fmt.Println(queRes)
+
+	for _, que := range queRes {
+		if que.QuestionID == questionID {
+			return que.Statement, nil
+		}
+	}
+	return "", errors.New("Invalid QuestionID")
+}
 
 func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	roomID := event.PathParameters["room_id"]
@@ -214,6 +228,10 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 		return createErrorResponseWithStatus(500, "Internal server error")
 	}
 
+	if err != nil {
+		return createErrorResponseWithStatus(500, err.Error())
+	}
+
 	roomResult, err := getRoomData(cfg, ctx, roomID)
 	if err != nil {
 		return createErrorResponseWithStatus(500, "DB get error")
@@ -226,6 +244,8 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 
 	santaCandidateList := ReturnSantaCandidateList(allUserData)
 	santaUserID, torchQuestionID := DecidingSantaAndQuestion(santaCandidateList, allUserData)
+	fmt.Println("torch")
+	fmt.Println(torchQuestionID)
 
 	var responseBody ResponseBody
 	//先ほど取得したサンタのuser_idとリクエストボディのuser_idが一致したらサンタである
@@ -237,10 +257,19 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 		responseBody.QuestionID = torchQuestionID
 	}
 
-	responseBody.UserID = req.UserID
-	responseBody.QuestionDescription = "ちいかわは好きですか。"
+	intQueID, err := strconv.Atoi(torchQuestionID)
+	if err != nil {
+		return createErrorResponseWithStatus(500, err.Error())
+	}
+	description, err := getQuestionDescriptionFromQuestionID(cfg, ctx, intQueID)
+	if err != nil {
+		return createErrorResponseWithStatus(500, err.Error())
+	}
 
-	json,_ := json.Marshal(responseBody)
+	responseBody.UserID = req.UserID
+	responseBody.QuestionDescription = description
+
+	json, _ := json.Marshal(responseBody)
 
 	return events.APIGatewayProxyResponse{
 		Body:       string(json),
