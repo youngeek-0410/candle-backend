@@ -251,13 +251,12 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	//先ほど取得したサンタのuser_idとリクエストボディのuser_idが一致したらサンタである
 	if santaUserID == req.UserID {
 		responseBody.IsSanta = true
-		responseBody.QuestionID = torchQuestionID
 	} else {
 		responseBody.IsSanta = false
-		responseBody.QuestionID = torchQuestionID
 	}
+	responseBody.QuestionID = torchQuestionID
 
-	intQueID, err := strconv.Atoi(torchQuestionID)
+	intQueID, err := strconv.Atoi(responseBody.QuestionID)
 	if err != nil {
 		return createErrorResponseWithStatus(500, err.Error())
 	}
