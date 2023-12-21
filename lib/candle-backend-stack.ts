@@ -127,6 +127,7 @@ export class CandleBackendStack extends cdk.Stack {
     });
     roomTable.grantReadWriteData(roomIdStartPOSTHandler);
     userTable.grantReadWriteData(roomIdStartPOSTHandler);
+    questionTable.grantReadWriteData(roomIdStartPOSTHandler);
     start.addMethod('POST', new apigateway.LambdaIntegration(roomIdStartPOSTHandler))
 
     //room/{room_id}/result:GET
