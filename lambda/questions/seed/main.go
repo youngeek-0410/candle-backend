@@ -59,6 +59,7 @@ func InsertData(ctx context.Context, event cfn.Event) (string, map[string]interf
 		input := &dynamodb.PutItemInput{
 			Item:      av,
 			TableName: aws.String(tableName),
+			//ConditionExpression: aws.String("attribute_not_exists(question_id)"),
 		}
 
 		_, err = svc.PutItem(input)

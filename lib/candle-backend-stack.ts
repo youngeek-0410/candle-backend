@@ -63,10 +63,21 @@ export class CandleBackendStack extends cdk.Stack {
         environment: {
           TABLE_NAME: questionTable.tableName,
         },
-        
     });
     questionTable.grantReadWriteData(questionsGETHandler);
     questions.addMethod('GET', new apigateway.LambdaIntegration(questionsGETHandler));
+    // questions:PUT
+    const questionsPUTHandler = new lambda.Function(this, 'CandleBackendQuestionsPOSTHandler', {
+        functionName: 'QuestionsPUTHandler',
+        runtime: lambda.Runtime.PROVIDED_AL2,
+        handler: 'bootstrap',
+        code: lambda.Code.fromAsset('lambda/questions/PUT', goLambdaBundleConfig),
+        environment: {
+          TABLE_NAME: questionTable.tableName,
+        },
+    });
+    questionTable.grantReadWriteData(questionsPUTHandler);
+    questions.addMethod('PUT', new apigateway.LambdaIntegration(questionsPUTHandler));
 
     const seedDataLambda = new lambda.Function(this, 'CandleBackendSeedDataLambda', {
         functionName: 'SeedDataLambda',
