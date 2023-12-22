@@ -136,7 +136,7 @@ func ReturnSantaCandidateList(users []UserData) ([]UserData, error) {
 	}
 
 	if len(santaCandidateList) == 0 {
-		return nil, errors.New("Santa can't decide")
+		return nil, errors.New("Game cannot start because there are not enough participants.")
 	}
 	return santaCandidateList, nil
 }
@@ -319,7 +319,7 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	twoOrMoreQueIDList := carefullySelectionOfTrueAnsTwoOrMore(allUserData, trueQueMap, santaUserID)
 
 	if len(twoOrMoreQueIDList) == 0 {
-		return createErrorResponseWithStatus(500, "Game cannot start because there are not enough participants")
+		return createErrorResponseWithStatus(500, "Unable to start game due to question answer status")
 	}
 
 	//回答者が2以上のquestion_idをリストアップして、その長さ分ランダムな整数値を生成し、その数字をインデックスにしてquestion_idを決定
