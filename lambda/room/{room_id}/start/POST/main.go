@@ -111,7 +111,7 @@ func getAllUserData(cfg aws.Config, ctx context.Context, userIDList []string) ([
 	}
 
 	if len(allUserInfo) <= 2 {
-		return nil, errors.New("Not enough participants.")
+		return nil, errors.New("Game cannot start because there are not enough participants.")
 	}
 	return allUserInfo, nil
 
@@ -319,7 +319,7 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	twoOrMoreQueIDList := carefullySelectionOfTrueAnsTwoOrMore(allUserData, trueQueMap, santaUserID)
 
 	if len(twoOrMoreQueIDList) == 0 {
-		return createErrorResponseWithStatus(500, "Unable to generate questions to start the game")
+		return createErrorResponseWithStatus(500, "Game cannot start because there are not enough participants")
 	}
 
 	//回答者が2以上のquestion_idをリストアップして、その長さ分ランダムな整数値を生成し、その数字をインデックスにしてquestion_idを決定
