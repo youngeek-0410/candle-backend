@@ -135,6 +135,7 @@ func ReturnSantaCandidateList(users []UserData) []UserData {
 }
 
 func returnNumberOfTrueForEachQuestion(userData []UserData) map[string]int {
+	//各QuestionのTrueの回答を集計
 	totalCount := make(map[string]int)
 	for _, user := range userData {
 		for _, ans := range user.Answers {
@@ -147,22 +148,46 @@ func returnNumberOfTrueForEachQuestion(userData []UserData) map[string]int {
 	return totalCount
 }
 
-func carefullySelectionOfTrueAnsTwoOrMore(eachQueCount map[string]int) []string {
+func extractionSantaFalseQueID(userData []UserData, santaID string) []string {
+	//サンタの回答がFalseの質問を列挙する
+	var santaTrueQueList []string
+	for _, user := range userData {
+		if user.UserID != santaID {
+			continue
+		}
+
+		for _, ans := range user.Answers {
+			if ans.Answer {
+				continue
+			}
+
+			santaTrueQueList = append(santaTrueQueList, ans.QuestionID)
+		}
+	}
+	return santaTrueQueList
+}
+
+func carefullySelectionOfTrueAnsTwoOrMore(userData []UserData, eachQueCount map[string]int, santaID string) []string {
+	//質問のTrue回答が2以上のものに修正
+	santaFalseQueList := extractionSantaFalseQueID(userData, santaID)
+
 	var twoOrMoreQueIDList []string
 	for key, count := range eachQueCount {
-		if count >= 2 {
-			twoOrMoreQueIDList = append(twoOrMoreQueIDList, key)
+		for _, santaTrueQue := range santaFalseQueList {
+			if count >= 2 && key == santaTrueQue {
+				//質問のカウントが2以上＆その質問がサンタが答えれなかったもの
+				twoOrMoreQueIDList = append(twoOrMoreQueIDList, key)
+			}
 		}
 	}
 	return twoOrMoreQueIDList
 }
 
-func DecidingSantaAndQuestion(santaCandidateList []UserData, allUserData []UserData) (string, string) {
+func decidingSanta(santaCandidateList []UserData, allUserData []UserData) string {
 	trueQueMap := returnNumberOfTrueForEachQuestion(allUserData)
 
 	var maxTrueCount int
 	maxTrueCount = -1
-	var torchQuestionID string
 	var santaUserID string
 
 	for _, santaData := range santaCandidateList {
@@ -173,12 +198,11 @@ func DecidingSantaAndQuestion(santaCandidateList []UserData, allUserData []UserD
 			}
 			if (!answer.Answer) && (trueCount > maxTrueCount) {
 				maxTrueCount = trueCount
-				torchQuestionID = answer.QuestionID
 				santaUserID = santaData.UserID
 			}
 		}
 	}
-	return santaUserID, torchQuestionID
+	return santaUserID
 }
 
 func createErrorResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
@@ -221,6 +245,7 @@ func getQuestionDescriptionFromQuestionID(cfg aws.Config, ctx context.Context, q
 }
 
 func addIsSantaColumn(cfg aws.Config, ctx context.Context, userID string, isSanta bool) error {
+	//サンタだった場合にUserTableを更新
 	svc := dynamodb.NewFromConfig(cfg)
 
 	_, err := svc.UpdateItem(ctx, &dynamodb.UpdateItemInput{
@@ -270,7 +295,7 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	}
 
 	santaCandidateList := ReturnSantaCandidateList(allUserData)
-	santaUserID, _ := DecidingSantaAndQuestion(santaCandidateList, allUserData)
+	santaUserID := decidingSanta(santaCandidateList, allUserData)
 
 	var responseBody ResponseBody
 	//先ほど取得したサンタのuser_idとリクエストボディのuser_idが一致したらサンタである
@@ -281,7 +306,7 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	}
 	addIsSantaColumn(cfg, ctx, req.UserID, responseBody.IsSanta)
 	trueQueMap := returnNumberOfTrueForEachQuestion(allUserData)
-	twoOrMoreQueIDList := carefullySelectionOfTrueAnsTwoOrMore(trueQueMap)
+	twoOrMoreQueIDList := carefullySelectionOfTrueAnsTwoOrMore(allUserData, trueQueMap, santaUserID)
 
 	//回答者が2以上のquestion_idをリストアップして、その長さ分ランダムな整数値を生成し、その数字をインデックスにしてquestion_idを決定
 	rand.Seed(time.Now().UnixNano())
