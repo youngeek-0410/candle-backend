@@ -5,6 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
+	"net/url"
+	"os"
+	"strconv"
+	"time"
+
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -12,10 +18,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"math/rand"
-	"os"
-	"strconv"
-	"time"
 )
 
 type Answer struct {
@@ -268,6 +270,10 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	roomID := event.PathParameters["room_id"]
 	if roomID == "" {
 		return createErrorResponseWithStatus(400, "Incorrect path parameter")
+	}
+	roomID, err := url.PathUnescape(roomID)
+	if err != nil {
+		return createErrorResponseWithStatus(500, "could not decode room_id")
 	}
 
 	var req RequestBody

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 
@@ -37,6 +38,10 @@ func enterRoomHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	roomId := event.PathParameters["room_id"]
 	if roomId == "" {
 		return createEmptyResponseWithStatus(400, "Incorrect path parameter")
+	}
+	roomId, err := url.PathUnescape(roomId)
+	if err != nil {
+		createEmptyResponseWithStatus(500, "could not decode room_id")
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx)

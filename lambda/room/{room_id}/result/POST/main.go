@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -75,6 +76,10 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	roomID := event.PathParameters["room_id"]
 	if roomID == "" {
 		return badRequestErrorResponse(errors.New("empty path parameters"))
+	}
+	roomID, err = url.PathUnescape(roomID)
+	if err != nil {
+		return serverErrorResponse(errors.New("could not decode room_id"))
 	}
 	// ユーザがルームに入っているか
 	if roomID != firedUser.RoomID {
