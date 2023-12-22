@@ -1,4 +1,4 @@
-module questions/POST
+module questions/PUT
 
 go 1.21
 
