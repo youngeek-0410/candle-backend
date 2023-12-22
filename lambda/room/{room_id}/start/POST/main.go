@@ -47,6 +47,10 @@ type ResponseBody struct {
 	QuestionDescription string `json:"question_description"`
 }
 
+type ErrorResponseBody struct {
+	Message string `json:"message"`
+}
+
 type Question struct {
 	QuestionID int    `json:"question_id" dynamodbav:"question_id"`
 	Statement  string `json:"statement" dynamodbav:"statement"`
@@ -215,8 +219,12 @@ func decidingSanta(santaCandidateList []UserData, allUserData []UserData) string
 }
 
 func createErrorResponseWithStatus(statusCode int, responseMessage string) (events.APIGatewayProxyResponse, error) {
+	body := ErrorResponseBody{
+		Message: responseMessage,
+	}
+	json, _ := json.Marshal(body)
 	return events.APIGatewayProxyResponse{
-		Body:       responseMessage,
+		Body:       string(json),
 		StatusCode: statusCode,
 		Headers:    map[string]string{"Content-Type": "application/json", "Access-Control-Allow-Origin": "*"},
 	}, nil
