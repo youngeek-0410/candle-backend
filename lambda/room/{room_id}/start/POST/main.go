@@ -112,10 +112,13 @@ func getAllUserData(cfg aws.Config, ctx context.Context, userIDList []string) ([
 		allUserInfo = append(allUserInfo, userInfo)
 	}
 
+	if len(allUserInfo) <= 2 {
+		return nil, errors.New("Game cannot start because there are not enough participants.")
+	}
 	return allUserInfo, nil
 
 }
-func ReturnSantaCandidateList(users []UserData) []UserData {
+func ReturnSantaCandidateList(users []UserData) ([]UserData, error) {
 	//サンタ疑惑のあるユーザーリストの返却
 	falseCountByUser := make(map[string]int)
 	var santaCandidateList []UserData
@@ -133,7 +136,11 @@ func ReturnSantaCandidateList(users []UserData) []UserData {
 			santaCandidateList = append(santaCandidateList, user)
 		}
 	}
-	return santaCandidateList
+
+	if len(santaCandidateList) == 0 {
+		return nil, errors.New("Game cannot start because there are not enough participants.")
+	}
+	return santaCandidateList, nil
 }
 
 func returnNumberOfTrueForEachQuestion(userData []UserData) map[string]int {
@@ -300,7 +307,10 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 		return createErrorResponseWithStatus(500, err.Error())
 	}
 
-	santaCandidateList := ReturnSantaCandidateList(allUserData)
+	santaCandidateList, err := ReturnSantaCandidateList(allUserData)
+	if err != nil {
+		return createErrorResponseWithStatus(500, err.Error())
+	}
 	santaUserID := decidingSanta(santaCandidateList, allUserData)
 
 	var responseBody ResponseBody
@@ -313,6 +323,10 @@ func gameStartHandler(ctx context.Context, event events.APIGatewayProxyRequest) 
 	addIsSantaColumn(cfg, ctx, req.UserID, responseBody.IsSanta)
 	trueQueMap := returnNumberOfTrueForEachQuestion(allUserData)
 	twoOrMoreQueIDList := carefullySelectionOfTrueAnsTwoOrMore(allUserData, trueQueMap, santaUserID)
+
+	if len(twoOrMoreQueIDList) == 0 {
+		return createErrorResponseWithStatus(500, "Unable to start game due to question answer status")
+	}
 
 	//回答者が2以上のquestion_idをリストアップして、その長さ分ランダムな整数値を生成し、その数字をインデックスにしてquestion_idを決定
 	rand.Seed(time.Now().UnixNano())
