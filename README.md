@@ -1,8 +1,37 @@
-# Candle backend
+## Candle backend
 
-This is a blank project for CDK development with TypeScript.
+## Overview
+Hack U KOSEN 2023 backend repository
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## Requirement
+### OS
+- MacOS Ventura 13.0
+- Arch Linux
+### Library
+- Go
+  - aws-lambda-go
+  - aws-sdk-go-v2
+  - aws-sdk-go
+- TypeScript
+  - aws-cdk-lib
+
+ ### Installation
+ 1. Clone this repository
+```
+https://github.com/youngeek-0410/candle-backend/
+```
+2. Install library
+```
+npm install
+```
+3. Bootstrapping
+```
+cdk bootstrap --toolkit-stack-name CandleCDKToolkit --qualifier candle
+```
+4. Deploy
+```
+cdk deploy CandleBackendStack --previous-parameters false
+```
 
 ## Useful commands
 
@@ -15,3 +44,9 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
 ## Swagger
 https://youngeek-0410.github.io/candle-backend/
+
+## Author
+- [Yuta Ito](https://github.com/GoRuGoo)
+- [Hoku Ishibe](https://github.com/is-hoku)
+- [Fumya Sakaguchi](https://github.com/fuu38)
+- [Manato Kato](https://github.com/kathmandu777)
