@@ -7,42 +7,39 @@ export class CandleBackendWebSocketServerStack extends cdk.Stack {
             maxAzs: 2,
         });
         const cluster = new cdk.aws_ecs.Cluster(this, 'CandleBackendWSSCluster', {
-            vpc: vpc
-        });
-        const wsImage = cdk.aws_ecs.ContainerImage.fromAsset('./lib/webSocket');
-
-        const service = new cdk.aws_ecs_patterns.ApplicationLoadBalancedFargateService(this, 'CandleBackendWSService', {
-            cluster: cluster,
-            cpu: 256,
-            desiredCount: 1,
-            taskImageOptions: {
-                image: wsImage,
-                containerPort: 80,
+            vpc: vpc,
+            capacity: {
+                instanceType: new cdk.aws_ec2.InstanceType('t2.nano'),
             },
+        });
+
+        const task = new cdk.aws_ecs.FargateTaskDefinition(this, 'CandleBackendWSSContainer', {
             memoryLimitMiB: 512,
-            publicLoadBalancer: true,
+            cpu: 256,
+        });
+        const image = cdk.aws_ecs.ContainerImage.fromAsset('./lib/webSocket');
+
+        const container = task.addContainer('CandleBackendWSSContainer', {
+            image: image,
         });
 
-        //HTTPヘルスチェック用の設定
-        const container = service.taskDefinition.defaultContainer!;
+
         container.addPortMappings({
-            containerPort: 8000,
-            hostPort: 8000,
-        });
-        
-        //デフォだとヘルスチェック数分かかってめんどい
-        service.targetGroup.configureHealthCheck({
-            interval: cdk.Duration.seconds(7),//if HTTP,must be grater than 6 by default
-            timeout: cdk.Duration.seconds(5),
-            unhealthyThresholdCount: 2,
-            healthyThresholdCount: 2,
-            path: '/',
-            port: '8000',
+            containerPort: 80,
+            protocol: cdk.aws_ecs.Protocol.TCP,
         });
 
+        const securityGroup = new cdk.aws_ec2.SecurityGroup(this, 'CandleBackendWSSSecurityGroup', {
+            vpc: vpc,
+            allowAllOutbound: true,
+        });
 
-        new cdk.CfnOutput(this, 'ALBDNSName', {
-            value: service.loadBalancer.loadBalancerDnsName,
+        securityGroup.addIngressRule(cdk.aws_ec2.Peer.anyIpv4(), cdk.aws_ec2.Port.tcp(80));
+        const service = new cdk.aws_ecs.FargateService(this, 'CandleBackendWSSService', {
+            cluster: cluster,
+            taskDefinition: task,
+            securityGroups: [securityGroup],
+            assignPublicIp: true,
         });
     }
 }
