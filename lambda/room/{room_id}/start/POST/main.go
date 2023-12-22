@@ -135,6 +135,7 @@ func ReturnSantaCandidateList(users []UserData) []UserData {
 }
 
 func returnNumberOfTrueForEachQuestion(userData []UserData) map[string]int {
+	//各QuestionのTrueの回答を集計
 	totalCount := make(map[string]int)
 	for _, user := range userData {
 		for _, ans := range user.Answers {
@@ -167,6 +168,7 @@ func extractionSantaFalseQueID(userData []UserData, santaID string) []string {
 }
 
 func carefullySelectionOfTrueAnsTwoOrMore(userData []UserData, eachQueCount map[string]int, santaID string) []string {
+	//質問のTrue回答が2以上のものに修正
 	santaFalseQueList := extractionSantaFalseQueID(userData, santaID)
 
 	var twoOrMoreQueIDList []string
@@ -243,6 +245,7 @@ func getQuestionDescriptionFromQuestionID(cfg aws.Config, ctx context.Context, q
 }
 
 func addIsSantaColumn(cfg aws.Config, ctx context.Context, userID string, isSanta bool) error {
+	//サンタだった場合にUserTableを更新
 	svc := dynamodb.NewFromConfig(cfg)
 
 	_, err := svc.UpdateItem(ctx, &dynamodb.UpdateItemInput{
