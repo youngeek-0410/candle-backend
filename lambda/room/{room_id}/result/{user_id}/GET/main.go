@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -43,6 +44,10 @@ func handler(ctx context.Context, event events.APIGatewayProxyRequest) (events.A
 	const roomTableName = "CandleBackendRoomTable" // || os.LookupEnv("ROOM_TABLE_NAME")
 	const userTableName = "CandleBackendUserTable" // || os.LookupEnv("USER_TABLE_NAME")
 	roomId := event.PathParameters["room_id"]
+	roomId, err := url.PathUnescape(roomId)
+	if err != nil {
+		return createResponseWithStatus(http.StatusInternalServerError), err
+	}
 	userId := event.PathParameters["user_id"]
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
